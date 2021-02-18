@@ -4,13 +4,16 @@ def process_file(file, inpath, outpath):
     with open(os.path.join(inpath, file)) as f:
         csv = f.read()
 
+    idx = 4 if file.startswith('sx5e') else 5
+
     # this uses adjusted close
-    prices = [line.split(',')[5] for line in csv.split('\n')]
+    prices = [line.split(',')[idx] for line in csv.split('\n')]
     prices = prices[1:]
 
     last = prices[1]
     corrected = []
     for price in prices:
+        price = price.strip()
         if price == 'null':
             corrected.append(last)
         else:
