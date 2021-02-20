@@ -22,8 +22,3 @@ class NumQModel(nn.Module):
         r = F.softmax(self.fc_q(F.sigmoid(x)))
 
         return q, r
-
-
-
-
-
