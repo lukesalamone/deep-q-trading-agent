@@ -30,6 +30,6 @@ class NumQDRegModel(nn.Module):
         # number branch
         x_num = F.relu(self.fc2_num(x))
         x_num = F.sigmoid(self.fc3_num(x_num))
-        r = F.softmax(self.fc_r(x))
+        r = F.softmax(self.fc_r(x_num))
 
         return q, r
