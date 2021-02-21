@@ -1,6 +1,13 @@
 import numpy as np
 
+# TODO batch reward function
+def batch_reward(prev_states:np.array, states:np.array, actions:np.array) -> np.array:
+    pass
 
+def batch_profit(num_t:np.array, actions:np.array, prices:np.array, prev_prices:np.array) -> np.array:
+    return num_t * actions * (prices - prev_prices) / prev_prices
+
+# TODO convert from raw prices
 def profit(action:int, prices:np.array, t:int, num_t:float=1) -> float:
     """
     :param action: Action in A = {1, 0, -1}

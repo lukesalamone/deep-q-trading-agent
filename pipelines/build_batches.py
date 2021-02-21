@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 ALLOWED_DATASETS = {'gspc', 'hsi', 'ks11', 'sx5e'}
-INPUT_PATH = '../data_clean'
+INPUT_PATH = 'data_clean'
 LOOKBACK = 200
 
 class Sequence_Dataset(Dataset):

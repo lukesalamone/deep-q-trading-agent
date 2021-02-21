@@ -27,8 +27,8 @@ def process_file(file, inpath, outpath):
 
 
 if __name__ == '__main__':
-    INPUT_PATH = '../data'
-    OUTPUT_PATH = '../data_clean'
+    INPUT_PATH = 'data'
+    OUTPUT_PATH = 'data_clean'
     for file in os.listdir(INPUT_PATH):
         process_file(file, INPUT_PATH, OUTPUT_PATH)
         print('processed file: ', file)
