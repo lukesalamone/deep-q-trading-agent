@@ -2,8 +2,8 @@ import random
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-
-from utils import *
+import torch
+from ..utils.rewards import batch_reward, batch_profit
 
 """
 TODO a lot
@@ -24,15 +24,14 @@ def train_numq(model, dataloader, threshold, batch_size, gamma, lr, strategy):
         q_sell = q[:,model.SELL]
         trade_confidence = torch.abs(q_buy - q_sell) / (q_buy + q_hold + q_sell)
         if trade_confidence < threshold:
-            # Execute given strategy
-            # ...
+            pass
         else:
             # Get actions for each state (SELL = -1, HOLD = 0, BUY = 1)
             actions_i = np.argmax(q)
             actions = 1 - actions_i
 
             # Calculate reward - should give 1 value
-            total_profit += profit(actions, states)
+            total_profit += batch_profit(actions, states)
             rewards = batch_reward(actions, states)
 
             # Compute q values for next state
