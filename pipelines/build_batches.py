@@ -13,7 +13,7 @@ class Sequence_Dataset(Dataset):
     Container to hold state values.
     Each state s_t contains the
     """
-    def __init__(self, x:torch.LongTensor):
+    def __init__(self, x:List):
         self.x = x
         self.len = len(x)
 
@@ -41,23 +41,38 @@ def _load_from_file(dataset:str) -> Dict[str, List[float]]:
         return files
 
 
-# read time series data in
-# each sample is
-#     state s = p_{t} - p_{t-1} for 200 previous days
+
 def batched(dataset:str, batch_size=64) -> Dict[str, DataLoader]:
+    """
+    Each batch sample contains (state, next_state, price, prev_price) where
+        state       p_t - p_{t-1} for t-199 to t where p_t is the closing price
+                    on day t
+        next_state  identical to state but shifted forward by one day
+                    e.g. next_state[0] == state[1]
+        price       closing price for day t
+        prev_price  closing price for day t-1
+
+    :param dataset: which stock or index history to be loaded
+    :param batch_size: batch size
+    :return:
+    """
     batches = {}
     datasets = _load_from_file(dataset)
 
     for key in datasets:
         batch = []
-        series = datasets[key]
-        for i in range(len(series)):
-            if i-LOOKBACK-1 < 0:
-                continue
+        prices = datasets[key]
 
-            sample_today = torch.Tensor(series[i-LOOKBACK:i])
-            sample_yesterday = torch.Tensor(series[i-LOOKBACK-1:i-1])
-            sample = sample_today - sample_yesterday
+        a = torch.Tensor(prices[1:])
+        b = torch.Tensor(prices[:-1])
+        states = a - b
+
+        for i in range(len(states) - LOOKBACK):
+            price = prices[LOOKBACK+i-1]
+            prev_price = prices[LOOKBACK+i-2]
+            state = states[i:LOOKBACK+i]
+            next_state = states[i+1:LOOKBACK+i+1]
+            sample = (state, next_state, price, prev_price)
             batch.append(sample)
 
         ds = Sequence_Dataset(x=batch)
@@ -67,6 +82,23 @@ def batched(dataset:str, batch_size=64) -> Dict[str, DataLoader]:
 
 
 if __name__ == '__main__':
-    batches = batched('sx5e')
-    print(batches)
+    # batches = batched('sx5e')
+
+    prices = [3,1,4,1,5,9,2,6,5,3,5,8,9]
+    batch = []
+    LOOKBACK = 5
+
+    a = torch.Tensor(prices[1:])
+    b = torch.Tensor(prices[:-1])
+    states = a - b
+
+    for i in range(len(states) - LOOKBACK):
+        price = prices[LOOKBACK + i - 1]
+        prev_price = prices[LOOKBACK + i - 2]
+        state = states[i:LOOKBACK + i]
+        next_state = states[i + 1:LOOKBACK + i + 1]
+        sample = (state, next_state, price, prev_price)
+        batch.append(sample)
+
+    print(batch)
     

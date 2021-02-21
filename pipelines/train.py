@@ -8,7 +8,7 @@ from ..utils.rewards import batch_reward, batch_profit
 """
 TODO a lot
 """
-def train_numq(model, dataloader, threshold, batch_size, gamma, lr, strategy):
+def train_numq(model, dataloader, threshold, gamma, lr, strategy):
     # Set initial profit to 0
     total_profit = 0
 
@@ -48,4 +48,3 @@ def train_numq(model, dataloader, threshold, batch_size, gamma, lr, strategy):
                 
 
     return 0
-
