@@ -51,7 +51,8 @@ def build_dataloader(batch_size, prices):
         prev_price = prices[LOOKBACK + i - 2]
         state = states[i:LOOKBACK + i]
         next_state = states[i + 1:LOOKBACK + i + 1]
-        sample = (state, next_state, price, prev_price)
+        init_price = prices[i]
+        sample = (state, next_state, price, prev_price, init_price)
         batch.append(sample)
 
     ds = Sequence_Dataset(x=batch)
