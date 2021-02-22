@@ -57,8 +57,8 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
     losses = []
     for i, (states, next_states) in enumerate(dataloader['train']):
         # Get q values on states batch
-        q = model.policy_net(states).detatch().numpy()
-        q_next = model.target_net(states)
+        q, r_num = model.policy_net(states).detatch().numpy()
+        q_next, r_num_next = model.target_net(states)
 
         # Branch based on if threshold is high enough
         # Same as above...
@@ -68,7 +68,8 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
         actions = 1 - actions_indices
 
         # Compute rewards
-        rewards = batch_reward(actions, states)
+        num = L * r_num[action_indices]
+        rewards = batch_reward(actions, num, states)
 
         # Compute new Q values given q values of the next best action
         # TODO - only for non - terminal states
