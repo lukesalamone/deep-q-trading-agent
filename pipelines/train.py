@@ -3,19 +3,22 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import torch
-from ..utils.rewards import batch_reward, batch_profit
+from .build_batches import batched
+from utils.rewards import batch_reward, batch_profit
+from models.models import NumQModel
+
 
 """
 TODO a lot
 """
-def train_numq(model, dataloader, threshold, gamma, lr, strategy):
-    # Set initial profit to 0
-    total_profit = 0
 
-    # Initialize model optimizer
+
+def train_numq(model, dataloaders, threshold, gamma, lr, strategy):
+    total_profit = 0
+    train, valid, test = dataloaders
 
     # Initialize dataset
-    for i, (states, next_states) in enumerate(dataloader['train']):
+    for i, (states, next_states, price, prev_price) in enumerate(train):
         # See if trade confidence is greater than threshold
         q = model(states)
 
@@ -48,3 +51,14 @@ def train_numq(model, dataloader, threshold, gamma, lr, strategy):
                 
 
     return 0
+
+
+if __name__ == '__main__':
+    lr = 1e-4
+    model = NumQModel()
+    threshold = 0.01
+    gamma = 0.85
+    strategy = 'HOLD'
+    dataloaders = batched(dataset='gspc', batch_size=64)
+
+    train_numq(model, dataloaders, threshold, gamma, lr, strategy)

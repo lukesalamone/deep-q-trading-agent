@@ -40,9 +40,24 @@ def _load_from_file(dataset:str) -> Dict[str, List[float]]:
 
         return files
 
+def build_dataloader(batch_size, prices):
+    batch = []
+    a = torch.Tensor(prices[1:])
+    b = torch.Tensor(prices[:-1])
+    states = a - b
 
+    for i in range(len(states) - LOOKBACK):
+        price = prices[LOOKBACK + i - 1]
+        prev_price = prices[LOOKBACK + i - 2]
+        state = states[i:LOOKBACK + i]
+        next_state = states[i + 1:LOOKBACK + i + 1]
+        sample = (state, next_state, price, prev_price)
+        batch.append(sample)
 
-def batched(dataset:str, batch_size=64) -> Dict[str, DataLoader]:
+    ds = Sequence_Dataset(x=batch)
+    return DataLoader(dataset=ds, batch_size=batch_size, shuffle=True)
+
+def batched(dataset:str, batch_size=64) -> List[DataLoader]:
     """
     Each batch sample contains (state, next_state, price, prev_price) where
         state       p_t - p_{t-1} for t-199 to t where p_t is the closing price
@@ -56,29 +71,9 @@ def batched(dataset:str, batch_size=64) -> Dict[str, DataLoader]:
     :param batch_size: batch size
     :return:
     """
-    batches = {}
     datasets = _load_from_file(dataset)
-
-    for key in datasets:
-        batch = []
-        prices = datasets[key]
-
-        a = torch.Tensor(prices[1:])
-        b = torch.Tensor(prices[:-1])
-        states = a - b
-
-        for i in range(len(states) - LOOKBACK):
-            price = prices[LOOKBACK+i-1]
-            prev_price = prices[LOOKBACK+i-2]
-            state = states[i:LOOKBACK+i]
-            next_state = states[i+1:LOOKBACK+i+1]
-            sample = (state, next_state, price, prev_price)
-            batch.append(sample)
-
-        ds = Sequence_Dataset(x=batch)
-        batches[key] = DataLoader(dataset=ds, batch_size=batch_size, shuffle=True)
-
-    return batches
+    datasets = [datasets[ds] for ds in ['train', 'valid', 'test']]
+    return [build_dataloader(batch_size, ds) for ds in datasets]
 
 
 if __name__ == '__main__':
