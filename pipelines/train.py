@@ -69,6 +69,42 @@ def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
     return 0
 
 
+def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
+    losses = []
+    for i, (states, next_states) in enumerate(dataloader['train']):
+        # Get q values on states batch
+        q, r_num = model.policy_net(states).detatch().numpy()
+        q_next, r_num_next = model.target_net(states)
+
+        # Branch based on if threshold is high enough
+        # Same as above...
+
+        # Compute actions
+        action_indices = p.argmax(q)
+        actions = 1 - actions_indices
+
+        # Compute rewards
+        num = L * r_num[action_indices]
+        rewards = batch_reward(actions, num, states)
+
+        # Compute new Q values given q values of the next best action
+        # TODO - only for non - terminal states
+        updated_q = rewards + gamma * q_next.max()
+
+        # Get new expected Q values for taken actions given new_q
+        expected_q = torch.tensor(q).gather(updated_q, action_indices)
+
+        # Compute loss given expected q values
+        loss = F.smooth_l1_loos(q, expected_q)
+        losses.append(loss.item())
+
+        # Fit model over entire batch/episode
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        
+
 if __name__ == '__main__':
     lr = 1e-4
     model = NumQModel()
