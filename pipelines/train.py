@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from .build_batches import batched
 from utils.rewards import batch_rewards, batch_profits
-from models.models import NumQModel
+from models.models import NumQModel, NumQDRegModel, DQN
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch import optim
@@ -84,7 +84,7 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
 
         # Compute actions
         action_indices = np.argmax(q, axis=1)
-        actions = 1 - actions_indices
+        actions = 1 - action_indices
 
         # Compute rewards
         num = L * r_num[action_indices]
@@ -108,7 +108,8 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
         loss.backward()
         optimizer.step()
 
-        # TODO update policy net with target net
+        # update policy net with target net
+        model.transfer_weights()
         # TODO potentially use tau param
         
 
