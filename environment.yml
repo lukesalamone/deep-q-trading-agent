@@ -1,4 +1,4 @@
-name: deep_q_trading_agent
+name: dqn_trading
 channels:
   - pytorch
   - anaconda
