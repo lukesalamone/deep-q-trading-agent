@@ -16,65 +16,61 @@ L = 10
 
 def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
     total_profit = 0
+    optimizer = optim.Adam(model.policy_net.parameters(), lr=lr)
     train, valid, test = dataloaders
-
+    losses = []
     # Initialize dataset
     for i, (states, next_states, prices, prev_prices, init_prices) in enumerate(train):
-        q_table, ratios = model(states)
+        # q_table is (batch_size, 3)
+        # ratios is (batch_size, 3)
+        q_table, ratios = model.policy_net(states)
+        q_next, ratios_next = model.target_net(next_states)
+        q_table, ratios = q_table.detach(), ratios.detach()
 
+        # we slice by column to get buy, hold, sell values (batch_size, 1)
         q_buy = q_table[:,model.BUY]
-        q_hold = q_table[:,model.HOLD]
         q_sell = q_table[:,model.SELL]
-        confidences = torch.abs(q_buy - q_sell) / (q_buy + q_hold + q_sell)
+
+        # (64,)
+        confidences = torch.abs(q_buy - q_sell) / torch.sum(input=q_table, dim=1)
+        best_q = torch.argmax(q_table, dim=1)
 
         if strategy is not None:
-            actions = [strategy if c < threshold else torch.argmax(qvals) for c, qvals in zip(confidences, q_table)]
+            actions = torch.tensor([strategy if c < threshold else best_action for c, best_action in zip(confidences, best_q)])
         else:
-            # get argmax for each item in batch
-            actions = torch.argmax(q_table, dim=1)
+            # use best action for each sample
+            actions = best_q
 
         # calculate initial prices p_{t-n}
         num_ts = ratios[:,actions]
         rewards = batch_rewards(num_ts=num_ts, actions=actions, prices=prices,
                                prev_prices=prev_prices, init_prices=init_prices)
 
-        profits = batch_profits(num_t=num_ts, actions=actions, prices=prices,
+        total_profit += batch_profits(num_t=num_ts, actions=actions, prices=prices,
                                 prev_prices=prev_prices)
 
-        buffer = list(zip(states, actions, rewards, next_states))
+        updated_q = rewards + gamma * q_next.max()
+        # TODO this isn't right...
+        # updated_q should be (64,3) not (64, 64)
 
-        #
-        # if trade_confidence < threshold:
-        #     pass
-        # else:
-        #     # Get actions for each state (SELL = -1, HOLD = 0, BUY = 1)
-        #     actions_i = np.argmax(q)
-        #     actions = 1 - actions_i
-        #
-        #     # Calculate reward - should give 1 value
-        #     total_profit += batch_profit(actions, states)
-        #     rewards = batch_reward(actions, states)
-        #
-        #     # Compute q values for next state
-        #     q_next = model(next_states)
-        #     next_actions_i = np.argmax(q_next)
-        #
-        #     # Update model given rewards
-        #     for i in range(states.shape[0]):
-        #         q_s_a = q[i][actions_i[i]]
-        #         q_next_s_next_a = q_next[i][next_actions_i[i]]
-        #
-        #         expected_ = rewards[i] + gamma * q_next_s_next_a - q_s_a
-        #
-        #
+        expected_q = torch.gather(input=updated_q, dim=0, index=actions)
+
+        loss = F.smooth_l1_loss(q_table, expected_q)
+        losses.append(loss.item())
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     return 0
 
 
-def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
+def train_numq2(model, dataloaders, threshold, gamma, lr, strategy=None):
     losses = []
     optimizer = optim.Adam(model.params(),lr=lr)
-    for i, (states, next_states) in enumerate(dataloader['train']):
+    train, valid, test = dataloaders
+
+    for i, (states, next_states, prices, prev_prices, init_prices) in enumerate(train):
         # Get q values on states batch
         q, r_num = model.policy_net(states).detatch().numpy()
         q_next, r_num_next = model.target_net(next_states) # next_states??

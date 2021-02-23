@@ -63,6 +63,9 @@ class NumQDRegModel(TradingAgent):
 
 class DQN:
     def __init__(self, architecture: TradingAgent):
+        self.BUY = 0
+        self.HOLD = 1
+        self.SELL = 2
         self.policy_net = architecture
         self.target_net = architecture
 

@@ -3,7 +3,7 @@ from torch import Tensor
 
 def batch_rewards(num_ts:Tensor, actions:Tensor, prices:Tensor, prev_prices:Tensor, init_prices:Tensor) -> Tensor:
     rewards = 1 + actions * (prices - prev_prices) / prev_prices
-    rewards *= num_ts * prices / init_prices
+    rewards = rewards * num_ts * prices / init_prices
     return rewards
 
 def batch_profits(num_t:np.array, actions:np.array, prices:np.array, prev_prices:np.array) -> np.array:
