@@ -1,0 +1,15 @@
+name: deep_q_trading_agent
+channels:
+  - pytorch
+  - anaconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.8,<3.9
+  - pytorch
+  - numpy
+  - pandas
+  - jupyterlab
+  - matplotlib
+  - pip
+  # - pip:
