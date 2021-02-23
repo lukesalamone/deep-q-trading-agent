@@ -34,9 +34,12 @@ def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
         # (64,)
         confidences = torch.abs(q_buy - q_sell) / torch.sum(input=q_table, dim=1)
         best_q = torch.argmax(q_table, dim=1)
-
         if strategy is not None:
-            actions = torch.tensor([strategy if c < threshold else best_action for c, best_action in zip(confidences, best_q)])
+            # TODO: STRATEGY MUST BE AN INT, JUST AS BEST_Q is AN INT BECAUSE ITS AN INDEX
+            #   strategy = 99
+            # actions = torch.tensor([strategy if c < threshold else best_action for c, best_action in zip(confidences, best_q)])
+            # vectorized version of above line
+            actions = torch.where(confidences.lt(threshold), strategy, best_q)
         else:
             # use best action for each sample
             actions = best_q
@@ -111,7 +114,7 @@ def train_numq2(model, dataloaders, threshold, gamma, lr, strategy=None):
 
 if __name__ == '__main__':
     lr = 1e-4
-    model = NumQModel()
+    model = DQN(NumQModel())
     threshold = 0.01
     gamma = 0.85
     strategy = 'HOLD'
