@@ -3,7 +3,9 @@ import torch
 from .build_batches import batched
 from utils.rewards import batch_rewards, batch_profits
 from models.models import NumQModel
-
+import torch.nn.functional as F
+from torch.optim import Adam
+from torch import optim
 
 """
 TODO a lot
@@ -71,21 +73,22 @@ def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
 
 def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
     losses = []
+    optimizer = optim.Adam(model.params(),lr=lr)
     for i, (states, next_states) in enumerate(dataloader['train']):
         # Get q values on states batch
         q, r_num = model.policy_net(states).detatch().numpy()
-        q_next, r_num_next = model.target_net(states)
+        q_next, r_num_next = model.target_net(next_states) # next_states??
 
         # Branch based on if threshold is high enough
         # Same as above...
 
         # Compute actions
-        action_indices = p.argmax(q)
+        action_indices = np.argmax(q, axis=1)
         actions = 1 - actions_indices
 
         # Compute rewards
         num = L * r_num[action_indices]
-        rewards = batch_reward(actions, num, states)
+        rewards = batch_rewards(actions, num, states)
 
         # Compute new Q values given q values of the next best action
         # TODO - only for non - terminal states
@@ -94,8 +97,10 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
         # Get new expected Q values for taken actions given new_q
         expected_q = torch.tensor(q).gather(updated_q, action_indices)
 
+        # TODO double check gather()
+
         # Compute loss given expected q values
-        loss = F.smooth_l1_loos(q, expected_q)
+        loss = F.smooth_l1_loss(q, expected_q)
         losses.append(loss.item())
 
         # Fit model over entire batch/episode
@@ -103,6 +108,8 @@ def train_2(model, dataloader, threshold, batch_size, gamma, lr, strategy):
         loss.backward()
         optimizer.step()
 
+        # TODO update policy net with target net
+        # TODO potentially use tau param
         
 
 if __name__ == '__main__':
