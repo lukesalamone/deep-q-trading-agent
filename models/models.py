@@ -1,9 +1,8 @@
-import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import List, Tuple
+from typing import Tuple
 
 class TradingAgent(nn.Module):
     def __init__(self):
@@ -20,7 +19,7 @@ class NumQModel(TradingAgent):
         self.fc3 = nn.Linear(in_features=100, out_features=50, bias=True)
         self.fc_q = nn.Linear(in_features=50, out_features=3, bias=True)
 
-    def forward(self, x:Tensor):
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -46,7 +45,7 @@ class NumQDRegModel(TradingAgent):
         self.fc3_num = nn.Linear(in_features=50, out_features=20, bias=True)
         self.fc_r = nn.Linear(in_features=20, out_features=3, bias=True)
 
-    def forward(self, x:Tensor):
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         # root
         x = F.relu(self.fc1(x))
 
@@ -61,3 +60,13 @@ class NumQDRegModel(TradingAgent):
         r = F.softmax(self.fc_r(x_num))
 
         return q, r
+
+class DQN:
+    def __init__(self, architecture: TradingAgent):
+        self.policy_net = architecture
+        self.target_net = architecture
+
+    def transfer_weights(self):
+        # TODO: Do we use TAU?
+        # Update the target network, copying all weights and biases in DQN
+        self.target_net.load_state_dict(self.policy_net.state_dict())
