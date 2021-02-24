@@ -126,18 +126,19 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     return loss.item()
 
 
-def train(model: DQN, num_episodes: int, memory_capacity: ReplayMemory, strategy: int=STRATEGY):
+def train(model: DQN, dataset: str, num_episodes: int, memory_capacity: int=MEMORY_CAPACITY, strategy: int=STRATEGY):
     losses = []
     replay_memory = ReplayMemory(capacity=memory_capacity)
 
     # Run for the defined number of episodes
-    for episode in range(num_episodes):
+    for e in range(num_episodes):
         # TODO need to figure out what episode should be
         # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
-        episode = get_episode(dataset='gspc')
+        train, valid, test = get_episode(dataset=dataset)
 
-        for sample in episode:
+        for sample in train:
             # get the sample
+            #TODO: code breaks down here
             (state, next_state, price, prev_price, init_price) = sample
             # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
