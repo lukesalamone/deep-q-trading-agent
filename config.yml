@@ -1,0 +1,18 @@
+# Data processing
+RAW_DATA_PATH: 'data'
+CLEAN_DATA_PATH: 'data_clean'
+ALLOWED_DATASETS: ['gspc', 'hsi', 'ks11', 'sx5e']
+LOOKBACK: 200
+
+# Model
+SHARE_TRADE_LIMIT: 10
+STRATEGY: 0
+
+# Training
+LR: 0.0001
+BATCH_SIZE: 64
+GAMMA: 0.05
+THRESHOLD: 0.2
+#TODO: Do we need this and what do we set it to?
+MEMORY_CAPACITY: 3000
+MIN_MEMORY_CAPACITY: 200

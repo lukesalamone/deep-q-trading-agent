@@ -1,4 +1,9 @@
 import os
+import yaml
+
+# Get all config values and hyperparameters
+with open("config.yml", "r") as ymlfile:
+    config = yaml.load(ymlfile)
 
 def process_file(file, inpath, outpath):
     with open(os.path.join(inpath, file)) as f:
@@ -27,8 +32,6 @@ def process_file(file, inpath, outpath):
 
 
 if __name__ == '__main__':
-    INPUT_PATH = 'data'
-    OUTPUT_PATH = 'data_clean'
-    for file in os.listdir(INPUT_PATH):
-        process_file(file, INPUT_PATH, OUTPUT_PATH)
+    for file in os.listdir(config["RAW_DATA_PATH"]):
+        process_file(file, config["RAW_DATA_PATH"], config["CLEAN_DATA_PATH"])
         print('processed file: ', file)

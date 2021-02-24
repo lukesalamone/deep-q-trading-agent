@@ -3,11 +3,11 @@ from typing import List, Dict, Tuple
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
+import yaml
 
-
-ALLOWED_DATASETS = {'gspc', 'hsi', 'ks11', 'sx5e'}
-INPUT_PATH = 'data_clean'
-LOOKBACK = 200
+# Get all config values and hyperparameters
+with open("config.yml", "r") as ymlfile:
+    config = yaml.load(ymlfile)
 
 def _load_from_file(dataset:str) -> List[List[float]]:
     """
@@ -17,17 +17,17 @@ def _load_from_file(dataset:str) -> List[List[float]]:
     :return: lists corresponding to datasets for train, valid, and test
     """
     dataset = dataset.lower()
-    if dataset not in ALLOWED_DATASETS:
+    if dataset not in config["ALLOWED_DATASETS"]:
         raise ValueError(f'Dataset type {dataset} not allowed')
     else:
         files = {}
-        for file in os.listdir(INPUT_PATH):
+        for file in os.listdir(config["CLEAN_DATA_PATH"]):
             if not file.startswith(dataset):
                 continue
 
             ds = file.split('.')[1]
 
-            with open(os.path.join(INPUT_PATH, file), 'r') as f:
+            with open(os.path.join(config["CLEAN_DATA_PATH"], file), 'r') as f:
                 files[ds] = [float(x) for x in f.read().split(',')]
 
         return [files[k] for k in ['train', 'valid', 'test']]
@@ -43,9 +43,9 @@ def _build_episode(prices:List[float]) -> List[Tuple[Tensor, Tensor, float, floa
     yesterday_prices = torch.Tensor(prices[:-1])
     states = today_prices - yesterday_prices
 
-    for i in range(len(states) - LOOKBACK):
-        state = states[i:LOOKBACK+i]
-        next_state = states[i+1:LOOKBACK+i+1]
+    for i in range(len(states) - config["LOOKBACK"]):
+        state = states[i:config["LOOKBACK"]+i]
+        next_state = states[i+1:config["LOOKBACK"]+i+1]
         price = today_prices[i]
         prev_price = yesterday_prices[i]
         sample = (state, next_state, price, prev_price, today_prices[0])
