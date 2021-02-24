@@ -12,8 +12,6 @@ TODO a lot
 """
 L = 10
 
-
-
 def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
     total_profit = 0
     optimizer = optim.Adam(model.policy_net.parameters(), lr=lr)
@@ -45,14 +43,19 @@ def train_numq(model, dataloaders, threshold, gamma, lr, strategy=None):
             actions = best_q
 
         # calculate initial prices p_{t-n}
+        # (64, )
         num_ts = ratios[:,actions]
-        rewards = batch_rewards(num_ts=num_ts, actions=actions, prices=prices,
-                               prev_prices=prev_prices, init_prices=init_prices)
+        # (64, )
+        rewards = batch_rewards(num_ts=num_ts, action_values=actions, prices=prices,
+                                prev_prices=prev_prices, init_prices=init_prices)
 
-        total_profit += batch_profits(num_t=num_ts, actions=actions, prices=prices,
-                                prev_prices=prev_prices)
+        #TODO: This is float not Tensor
+        total_profit += batch_profits(num_t=num_ts, action_values=actions, prices=prices,
+                                      prev_prices=prev_prices)
 
-        updated_q = rewards + gamma * q_next.max()
+        # q_next (64, 3) -> max -> (64, ), rewards (64, )
+        #TODO: Is there a way to only return the max
+        updated_q = rewards + gamma * torch.max(q_next, dim=1)[0]
         # TODO this isn't right...
         # updated_q should be (64,3) not (64, 64)
 
