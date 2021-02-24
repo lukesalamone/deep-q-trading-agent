@@ -4,14 +4,20 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Tuple
 
-class TradingAgent(nn.Module):
-    def __init__(self):
-        super().__init__()
+class DQN():
+    def __init__(self, architecture: nn.Module):
         self.BUY = 0
         self.HOLD = 1
         self.SELL = 2
+        self.policy_net = architecture
+        self.target_net = architecture
 
-class NumQModel(TradingAgent):
+    def transfer_weights(self):
+        # TODO: Do we use TAU?
+        # Update the target network, copying all weights and biases in DQN
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+
+class NumQModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.fc1 = nn.Linear(in_features=200, out_features=200, bias=True)
@@ -29,7 +35,7 @@ class NumQModel(TradingAgent):
 
         return q, r
 
-class NumQDRegModel(TradingAgent):
+class NumQDRegModel(nn.Module):
     def __init__(self):
         super().__init__()
         # root
@@ -60,16 +66,3 @@ class NumQDRegModel(TradingAgent):
         r = F.softmax(self.fc_r(x_num))
 
         return q, r
-
-class DQN:
-    def __init__(self, architecture: TradingAgent):
-        self.BUY = 0
-        self.HOLD = 1
-        self.SELL = 2
-        self.policy_net = architecture
-        self.target_net = architecture
-
-    def transfer_weights(self):
-        # TODO: Do we use TAU?
-        # Update the target network, copying all weights and biases in DQN
-        self.target_net.load_state_dict(self.policy_net.state_dict())
