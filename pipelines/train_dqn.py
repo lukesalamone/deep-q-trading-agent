@@ -154,9 +154,8 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
             optim_steps += 1
 
             # If loss was returned, append to losses and printloss every 100 steps
-            if loss:
-                losses.append(loss)
-                if optim_steps % 100 == 0:
+            if loss and optim_steps % 100 == 0:
+                    losses.append(loss)
                     print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
 
         # Update policy net with target net
