@@ -32,7 +32,6 @@ class ReplayMemory(object):
 
     def update(self, transition: Tuple[Tensor, int, Tensor, float]):
         """
-        #TODO: COMMENT
         Saves a transition
         :param transition: (state, action_index, next_state, reward)
         :return:
@@ -66,7 +65,8 @@ def select_action(model: DQN, state: Tensor, strategy: int=None):
         if confidence < THRESHOLD:
             # TODO use defined strategy (hold for now)
             # actions = torch.where(confidences.lt(threshold), strategy, best_q)
-            return model.HOLD, num.item()
+            # return model.HOLD, num.item()
+            return strategy, num.item()
     
     # If confidence is high enough, return the action of the highest q value
     return torch.argmax(q).item(), num.item()
@@ -107,7 +107,7 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     next_q_batch, next_num_batch = model.target_net(state_batch)
 
     # TODO check size of all outputs
-    
+
     # Compute the expected Q values
     expected_q_batch = reward_batch + (GAMMA * next_q_batch)
 
