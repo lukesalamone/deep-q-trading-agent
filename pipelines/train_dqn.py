@@ -68,27 +68,27 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"]):
 def optimize_model(model: DQN, memory: ReplayMemory):
     # Skip if memory length is not at least batch size
     if len(memory) < config["BATCH_SIZE"]:
-        return
+        return None
 
     # Initialize optimizer
     optimizer = optim.Adam(model.policy_net.parameters(),lr=config["LR"])
 
     # Sample a batch from memory
     # (state, action_index, next_state, reward)
-    batch = list(zip(memory.sample(batch_size=config["BATCH_SIZE"])))
+    batch = list(zip(*memory.sample(batch_size=config["BATCH_SIZE"])))
 
     # Get batch of states, actions, and rewards
     # (each item in batch is a tuple of tensors so stack puts them together)
     state_batch = torch.stack(batch[0])
-    action_batch = torch.stack(batch[1])
-    next_state_batch = torch.stack(batch[2])
-    reward_batch = torch.stack(batch[3])
+    action_batch = torch.unsqueeze(torch.tensor(batch[1]), dim=1)
+    reward_batch = torch.unsqueeze(torch.tensor(batch[2]), dim=1)
+    next_state_batch = torch.stack(batch[3])
 
     # TODO check shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 200), (BATCH_SIZE, 1) respectively
-    assert state_batch.shape() == (config["BATCH_SIZE"], 200)
-    assert action_batch.shape() == (config["BATCH_SIZE"], 1)
-    assert next_state_batch.shape() == (config["BATCH_SIZE"], 200)
-    assert reward_batch.shape() == (config["BATCH_SIZE"], 1)
+    assert state_batch.shape == (config["BATCH_SIZE"], 200)
+    assert action_batch.shape == (config["BATCH_SIZE"], 1)
+    assert reward_batch.shape == (config["BATCH_SIZE"], 1)
+    assert next_state_batch.shape == (config["BATCH_SIZE"], 200)
 
     # Get q values from policy net from state batch
     # (we keep track of gradients for this model)
@@ -119,12 +119,14 @@ def optimize_model(model: DQN, memory: ReplayMemory):
 
 
 def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STRATEGY"]):
+    print("Training model on {}...".format(dataset))
+
+    optim_steps = 0
     losses = []
     replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
     # Run for the defined number of episodes
     for e in range(num_episodes):
-        print("Episode:", e)
         # TODO need to figure out what episode should be
         # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
         train, valid, test = get_episode(dataset=dataset)
@@ -145,17 +147,22 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)
-            replay_memory.update((state, action_index, next_state, reward))
+            replay_memory.update((state, action_index, reward, next_state))
 
-            # Update model and add loss to losses
+            # Update model and increment optimization steps
             loss = optimize_model(model=model, memory=replay_memory)
-            losses.append(loss)
+            optim_steps += 1
 
-            # Print losse after optimizing
-            print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
+            # If loss was returned, append to losses and printloss every 100 steps
+            if loss:
+                losses.append(loss)
+                if optim_steps % 100 == 0:
+                    print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
 
         # Update policy net with target net
         model.transfer_weights()
+    
+    print("Training complete")
     
     # Return loss values during training
     return losses
