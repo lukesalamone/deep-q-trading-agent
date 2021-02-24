@@ -11,71 +11,105 @@ from torch import optim
 TODO fill in DQN details
 """
 L = 10
+LR = 0.0001
+BATCH_SIZE = 64
+GAMMA = 0.05
+THRESHOLD = 0.2
 
+# Select an action given model and state
+# Returns action index
 def select_action(model, state, strategy):
     # Get q values for this state
     with torch.no_grad():
-        q = model.policy_net(state)
+        q, num = model.policy_net(state)
     
-    # Decide whether to use pre defined strategy or action of best q values
-    #...
+    # Reduce unnecessary dimension
+    q = q.squeeze()
+    num = num.squeeze()
+    # TODO check (q.shape num.shape should be (3,) (1,) respectively) here
+    
+    # Use predefined confidence if confidence is too low, indicating a confused market
+    confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
+    if confidence < THRESHOLD:
+        # TODO use defined strategy (hold for now)
+        return model.HOLD, num.item()
+    
+    # If confidence is high enough, return the action of the highest q value
+    return torch.argmax(q).item(), num.item()
 
-    return action
+# Update policy net using a batch from memory
+def optimize_model(model, memory):
+    # Skip if memory length is not at least batch size
+    if len(memory) < BATCH_SIZE:
+        return
 
-
-def optimize_model(model, memory, gamma, batch_size):
-    optimizer = optim.Adam(model.policy_net.params(),lr=lr)
+    # Initialize optimizer
+    optimizer = optim.Adam(model.policy_net.params(),lr=LR)
 
     # Sample a batch from memory
-    batch = # ...
+    # TODO currently using last batch_size transistion, but need to do randomly so it uses action replay
+    batch = list(zip(*memory[-BATCH_SIZE]))
 
     # Get batch of states, actions, and rewards
-    # TODO unpack from batch
-    state_batch = 
-    action_batch = 
-    reward_batch = 
+    # (each item in batch is a tuple of tensors so stack puts them togethor)
+    # TODO check if states shape, actions shape, rewards shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 1) respectively
+    state_batch = torch.stack(batch[0])
+    action_batch = torch.stack(batch[1])
+    reward_batch = torch.stack(batch[2])
 
     # Get q values from policy net from state batch
     # (we keep track of gradients for this model)
-    q_batch = model.policy_net(state_batch)
+    q_batch, num_batch = model.policy_net(state_batch)
 
     # Get q values from target net from next states
     # (we do NOT keep track of gradients for this model)
     # TODO remove terminal state
-    next_q_batch = model.target_net(state_batch)
+    next_q_batch, next_num_batch = model.target_net(state_batch)
+
+    # TODO check size of all outputs
 
     # Compute the expected Q values
-    expected_q_batch = reward_batch + (gamma * next_q_batch)
+    expected_q_batch = reward_batch + (GAMMA * next_q_batch)
 
-    # Loss is the difference between the q values from the policy net
-    # and expected q values from the target net
+    # Loss is the difference between the q values from the policy net and expected q values from the target net
     loss = F.smooth_l1_loss(q_batch, expected_q)
 
-    # Optimize the model
+    # Clear gradients and update model parameters
     optimizer.zero_grad()
     loss.backward()
+    # TODO need gradient clipping?
+    optimizer.step()
+
+    return loss.item()
 
 
-
-def train3(model, num_episodes, batch_size, threshold, gamma, lr, strategy=None):
+def train(model, num_episodes, strategy=None):
     losses = []
     memory = []
 
-    # For each episode
+    # Run for the defined number of episodes
     for e in num_episodes:
-        states = #...
-        for state in states:
-            # Select action
-            action, num = select_action(model, state, strategy)
+        # TODO need to fgure out what episode_states should be
+        episode_states = None
 
-            # Get reward
-            reward = batch_rewards(action, num, state)
+        for state, next_state in zip(episode_states):
+            # Select action
+            action_index, num = select_action(model, state, strategy)
+
+            # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
+            action_value = model.action_index_to_value(action_index)
+
+            # Get reward given action_value and num
+            reward = get_reward(action_value, num, state)
 
             # Push transition into memory buffer
-            memory.append((state, action, reward, next_state))
+            # NOTE (using action index not action value)
+            # TODO Need to ensure memory does not exceed certain size?
+            memory.append((state, action_index, reward, next_state))
 
-            # Train from memory given batch size
-            optimize_model(model, memory, batch_size)
+            # Update model and add loss to losses
+            loss = optimize_model(model, memory)
+            losses.append(loss)
 
         # Update policy net with target net
         model.transfer_weights()

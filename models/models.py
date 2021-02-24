@@ -16,6 +16,10 @@ class DQN():
         # TODO: Do we use TAU?
         # Update the target network, copying all weights and biases in DQN
         self.target_net.load_state_dict(self.policy_net.state_dict())
+    
+    # Given the index of the action, return the value (BUY=1, HOLD=0, SELL=-1)
+    def action_index_to_value(i):
+        return 1 - i
 
 class NumQModel(nn.Module):
     def __init__(self):
