@@ -4,4 +4,4 @@ from torch import tensor
 
 if __name__ == '__main__':
     model = DQN(NumQModel())
-    train(model, num_episodes=5)
+    train(model, num_episodes=5, dataset='gspc')

@@ -45,23 +45,24 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"]):
     q = q.squeeze()
     num = num.squeeze()
 
+    # Check (q.shape num.shape should both be (3,) respectively) here
+    assert q.shape == (3, )
+    assert num.shape == (3, )
+
+    # Use predefined confidence if confidence is too low, indicating a confused market
+    confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
+    if strategy and confidence < config["THRESHOLD"]:
+        # TODO use defined strategy (hold for now)
+        # actions = torch.where(confidences.lt(threshold), strategy, best_q)
+        action_index = strategy
+    else:
+        action_index = torch.argmax(q).item()
+    
     # Multiply num by trading limit to get actual share trade volume
-    num = config["SHARE_TRADE_LIMIT"] * num.item()
-
-    # TODO check (q.shape num.shape should be (3,) (1,) respectively) here
-    assert q.shape() == (3, )
-    assert num.shape() == (1, )
-
-    if strategy is not None:
-        # Use predefined confidence if confidence is too low, indicating a confused market
-        confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
-        if confidence < config["THRESHOLD"]:
-            # TODO use defined strategy (hold for now)
-            # actions = torch.where(confidences.lt(threshold), strategy, best_q)
-            return strategy, num
+    num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
     
     # If confidence is high enough, return the action of the highest q value
-    return torch.argmax(q).item(), num
+    return action_index, num
 
 # Update policy net using a batch from memory
 def optimize_model(model: DQN, memory: ReplayMemory):
@@ -70,7 +71,7 @@ def optimize_model(model: DQN, memory: ReplayMemory):
         return
 
     # Initialize optimizer
-    optimizer = optim.Adam(model.policy_net.params(),lr=LR)
+    optimizer = optim.Adam(model.policy_net.parameters(),lr=config["LR"])
 
     # Sample a batch from memory
     # (state, action_index, next_state, reward)
@@ -123,6 +124,7 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
 
     # Run for the defined number of episodes
     for e in range(num_episodes):
+        print("Episode:", e)
         # TODO need to figure out what episode should be
         # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
         train, valid, test = get_episode(dataset=dataset)
@@ -130,7 +132,6 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
         for sample in train:
             # get the sample
             #TODO: code breaks down here
-            print(len(sample))
             (state, next_state, price, prev_price, init_price) = sample
             # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
@@ -149,6 +150,9 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
             # Update model and add loss to losses
             loss = optimize_model(model=model, memory=replay_memory)
             losses.append(loss)
+
+            # Print losse after optimizing
+            print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
 
         # Update policy net with target net
         model.transfer_weights()
