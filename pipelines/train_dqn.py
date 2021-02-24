@@ -25,6 +25,7 @@ THRESHOLD = 0.2
 #TODO: Do we need this and what do we set it to?
 MEMORY_CAPACITY = 3000
 MIN_MEMORY_CAPACITY = 200
+STRATEGY = 0
 
 class ReplayMemory(object):
     def __init__(self, capacity):
@@ -46,7 +47,7 @@ class ReplayMemory(object):
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, strategy: int=None):
+def select_action(model: DQN, state: Tensor, strategy: int=STRATEGY):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -57,7 +58,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=None):
 
     # TODO check (q.shape num.shape should be (3,) (1,) respectively) here
     assert q.shape() == (3, )
-    assert num.sshape() == (1, )
+    assert num.shape() == (1, )
 
     if strategy is not None:
         # Use predefined confidence if confidence is too low, indicating a confused market
@@ -125,12 +126,12 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     return loss.item()
 
 
-def train(model, num_episodes, memory_capacity, strategy=None):
+def train(model: DQN, num_episodes: int, memory_capacity: ReplayMemory, strategy: int=STRATEGY):
     losses = []
     replay_memory = ReplayMemory(capacity=memory_capacity)
 
     # Run for the defined number of episodes
-    for e in num_episodes:
+    for episode in range(num_episodes):
         # TODO need to figure out what episode should be
         # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
         episode = get_episode(dataset='gspc')
@@ -139,7 +140,7 @@ def train(model, num_episodes, memory_capacity, strategy=None):
             # get the sample
             (state, next_state, price, prev_price, init_price) = sample
             # Select action
-            action_index, num = select_action(model=model, state=state, strategy=None)
+            action_index, num = select_action(model=model, state=state, strategy=strategy)
 
             # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
             action_value = model.action_index_to_value(action_index=action_index)
@@ -150,7 +151,6 @@ def train(model, num_episodes, memory_capacity, strategy=None):
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)
-            # TODO Need to ensure memory does not exceed certain size? => YES WE DID. CHECK CAPACITY
             replay_memory.update((state, action_index, next_state, reward))
 
             # Update model and add loss to losses
