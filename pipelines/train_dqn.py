@@ -23,8 +23,8 @@ BATCH_SIZE = 64
 GAMMA = 0.05
 THRESHOLD = 0.2
 #TODO: Do we need this and what do we set it to?
-MEMORY_CAPACITY = 200
-MIN_MEMORY_CAPACITY = 1
+MEMORY_CAPACITY = 3000
+MIN_MEMORY_CAPACITY = 200
 
 class ReplayMemory(object):
     def __init__(self, capacity):
@@ -34,7 +34,7 @@ class ReplayMemory(object):
         """
         #TODO: COMMENT
         Saves a transition
-        :param transition: (state, ...)
+        :param transition: (state, action_index, next_state, reward)
         :return:
         """
         self.memory.append(transition)
@@ -81,16 +81,21 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     optimizer = optim.Adam(model.policy_net.params(),lr=LR)
 
     # Sample a batch from memory
-    # TODO currently using last batch_size transition, but need to do randomly so it uses action replay
-    # batch = list(zip(*memory[-BATCH_SIZE]))
-    
+    # (state, action_index, next_state, reward)
+    batch = list(zip(memory.sample(batch_size=BATCH_SIZE)))
 
     # Get batch of states, actions, and rewards
-    # (each item in batch is a tuple of tensors so stack puts them togethor)
-    # TODO check if states shape, actions shape, rewards shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 1) respectively
+    # (each item in batch is a tuple of tensors so stack puts them together)
     state_batch = torch.stack(batch[0])
     action_batch = torch.stack(batch[1])
-    reward_batch = torch.stack(batch[2])
+    next_state_batch = torch.stack(batch[2])
+    reward_batch = torch.stack(batch[3])
+
+    # TODO check shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 200), (BATCH_SIZE, 1) respectively
+    assert state_batch.shape() == (BATCH_SIZE, 200)
+    assert action_batch.shape() == (BATCH_SIZE, 1)
+    assert next_state_batch.shape() == (BATCH_SIZE, 200)
+    assert reward_batch.shape() == (BATCH_SIZE, 1)
 
     # Get q values from policy net from state batch
     # (we keep track of gradients for this model)
@@ -98,21 +103,23 @@ def optimize_model(model: DQN, memory: ReplayMemory):
 
     # Get q values from target net from next states
     # (we do NOT keep track of gradients for this model)
-    # TODO remove terminal state
+    # TODO handle terminal state in build_episode and then here.
     next_q_batch, next_num_batch = model.target_net(state_batch)
 
     # TODO check size of all outputs
-
+    
     # Compute the expected Q values
     expected_q_batch = reward_batch + (GAMMA * next_q_batch)
 
     # Loss is the difference between the q values from the policy net and expected q values from the target net
-    loss = F.smooth_l1_loss(q_batch, expected_q)
+    loss = F.smooth_l1_loss(q_batch, expected_q_batch)
 
     # Clear gradients and update model parameters
     optimizer.zero_grad()
     loss.backward()
     # TODO need gradient clipping?
+    #  RESPONSE: I think we smooth l1 loss takes care of that
+    #  https://srome.github.io/A-Tour-Of-Gotchas-When-Implementing-Deep-Q-Networks-With-Keras-And-OpenAi-Gym/
     optimizer.step()
 
     return loss.item()
