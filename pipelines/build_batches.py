@@ -1,6 +1,7 @@
 import os
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import torch
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -8,22 +9,13 @@ ALLOWED_DATASETS = {'gspc', 'hsi', 'ks11', 'sx5e'}
 INPUT_PATH = 'data_clean'
 LOOKBACK = 200
 
-class Sequence_Dataset(Dataset):
+def _load_from_file(dataset:str) -> List[List[float]]:
     """
-    Container to hold state values.
-    Each state s_t contains the
+    Read raw csv closing price data into lists, filling in empty values with
+    the closing price of the previous day.
+    :param dataset: name of the security whose price history will be loaded
+    :return: lists corresponding to datasets for train, valid, and test
     """
-    def __init__(self, x:List):
-        self.x = x
-        self.len = len(x)
-
-    def __getitem__(self, idx):
-        return self.x[idx]
-
-    def __len__(self):
-        return self.len
-
-def _load_from_file(dataset:str) -> Dict[str, List[float]]:
     dataset = dataset.lower()
     if dataset not in ALLOWED_DATASETS:
         raise ValueError(f'Dataset type {dataset} not allowed')
@@ -38,63 +30,43 @@ def _load_from_file(dataset:str) -> Dict[str, List[float]]:
             with open(os.path.join(INPUT_PATH, file), 'r') as f:
                 files[ds] = [float(x) for x in f.read().split(',')]
 
-        return files
+        return [files[k] for k in ['train', 'valid', 'test']]
 
-def build_dataloader(batch_size, prices):
-    batch = []
-    a = torch.Tensor(prices[1:])
-    b = torch.Tensor(prices[:-1])
-    states = a - b
+def _build_episode(prices:List[float]) -> List[Tuple[Tensor, Tensor, float, float, float]]:
+    """
+    Convert raw prices into requisite data for one episode
+    :param prices: raw float values from file
+    :return: list of tuples consisting of (state, next state, price, previous price, initial price)
+    """
+    episode = []
+    today_prices = torch.Tensor(prices[1:])
+    yesterday_prices = torch.Tensor(prices[:-1])
+    states = today_prices - yesterday_prices
 
     for i in range(len(states) - LOOKBACK):
-        price = prices[LOOKBACK + i - 1]
-        prev_price = prices[LOOKBACK + i - 2]
-        state = states[i:LOOKBACK + i]
-        next_state = states[i + 1:LOOKBACK + i + 1]
-        init_price = prices[i]
-        sample = (state, next_state, price, prev_price, init_price)
-        batch.append(sample)
+        state = states[i:LOOKBACK+i]
+        next_state = states[i+1:LOOKBACK+i+1]
+        price = today_prices[i]
+        prev_price = yesterday_prices[i]
+        sample = (state, next_state, price, prev_price, today_prices[0])
+        episode.append(sample)
+    return episode
 
-    ds = Sequence_Dataset(x=batch)
-    return DataLoader(dataset=ds, batch_size=batch_size, shuffle=True)
 
-def batched(dataset:str, batch_size=64) -> List[DataLoader]:
+def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, float]]]:
     """
-    Each batch sample contains (state, next_state, price, prev_price) where
+    Each episode sample contains (state, next_state, price, prev_price, init_price) where
         state       p_t - p_{t-1} for t-199 to t where p_t is the closing price
                     on day t
         next_state  identical to state but shifted forward by one day
                     e.g. next_state[0] == state[1]
         price       closing price for day t
         prev_price  closing price for day t-1
-
-    :param dataset: which stock or index history to be loaded
-    :param batch_size: batch size
-    :return:
+        init_price  closing price for day t-n
+    :param dataset: which security price history will be loaded
+    :return: list of samples for each trading day in episode
     """
     datasets = _load_from_file(dataset)
-    datasets = [datasets[ds] for ds in ['train', 'valid', 'test']]
-    return [build_dataloader(batch_size, ds) for ds in datasets]
+    return [_build_episode(ds) for ds in datasets]
 
 
-if __name__ == '__main__':
-    # batches = batched('sx5e')
-
-    prices = [3,1,4,1,5,9,2,6,5,3,5,8,9]
-    batch = []
-    LOOKBACK = 5
-
-    a = torch.Tensor(prices[1:])
-    b = torch.Tensor(prices[:-1])
-    states = a - b
-
-    for i in range(len(states) - LOOKBACK):
-        price = prices[LOOKBACK + i - 1]
-        prev_price = prices[LOOKBACK + i - 2]
-        state = states[i:LOOKBACK + i]
-        next_state = states[i + 1:LOOKBACK + i + 1]
-        sample = (state, next_state, price, prev_price)
-        batch.append(sample)
-
-    print(batch)
-    
