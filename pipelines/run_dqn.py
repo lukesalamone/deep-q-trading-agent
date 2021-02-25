@@ -3,6 +3,7 @@ import torch
 import random
 from typing import Tuple
 from collections import deque
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch import optim, Tensor
@@ -165,7 +166,7 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
     print("Training complete")
     
     # Return loss values during training
-    return losses
+    return model, losses
 
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
