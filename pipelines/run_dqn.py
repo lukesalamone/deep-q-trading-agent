@@ -9,7 +9,7 @@ from torch import optim, Tensor
 import yaml
 
 from .build_batches import get_episode
-from utils.rewards import compute_reward
+from utils.rewards import compute_reward, compute_profit
 from models.models import NumQModel, NumQDRegModel, DQN
 
 # Get all config values and hyperparameters
@@ -193,13 +193,10 @@ def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["ST
 
         # Get reward given action_value and num
         # TODO need to make sure our profit function works
-        profit = compute_profit(num_t=num, action_value=action_value, price=price,
-                                prev_price=prev_price, init_price=init_price)
+        profit = compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
 
         # Add profits to list
         profits.append(profit)
     
     # Return list of profits and total profit
     return profits, sum(profits)
-
-

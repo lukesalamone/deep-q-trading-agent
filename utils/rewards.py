@@ -37,12 +37,13 @@ def batch_profits(num_t:np.array, action_values:np.array, prices:np.array, prev_
     """
     return num_t * action_values * (prices - prev_prices) / prev_prices
 
-def get_profit(action_value: int, price: float, prev_price: float, num_t: float=1) -> float:
+
+def compute_profit(num_t: float, action_value: int, price: float, prev_price: float) -> float:
     """
+    :param num_t:
     :param action_value:
     :param price:
     :param prev_price:
-    :param num_t:
     :return:
     """
     return num_t * action_value * (price - prev_price) / prev_price
