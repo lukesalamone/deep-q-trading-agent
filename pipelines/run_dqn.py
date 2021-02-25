@@ -36,7 +36,7 @@ class ReplayMemory(object):
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"]):
+def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -51,7 +51,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"]):
 
     # Use predefined confidence if confidence is too low, indicating a confused market
     confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
-    if strategy and confidence < config["THRESHOLD"]:
+    if strategy and confidence < config["THRESHOLD"] or only_use_strategy:
         # TODO use defined strategy (hold for now)
         # actions = torch.where(confidences.lt(threshold), strategy, best_q)
         action_index = strategy
@@ -117,24 +117,25 @@ def optimize_model(model: DQN, memory: ReplayMemory):
 
     return loss.item()
 
-
-def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STRATEGY"]):
+# Train model on given training data
+def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATEGY"]):
     print("Training model on {}...".format(dataset))
 
     optim_steps = 0
     losses = []
     replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
+    # TODO need to figure out what episode should be
+    # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
+    train, valid, test = get_episode(dataset=dataset)
+
     # Run for the defined number of episodes
     for e in range(num_episodes):
-        # TODO need to figure out what episode should be
-        # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
-        train, valid, test = get_episode(dataset=dataset)
-
+        # Look at each time step in the train data
         for sample in train:
-            # get the sample
-            #TODO: code breaks down here
+            # Get the sample at this time step
             (state, next_state, price, prev_price, init_price) = sample
+
             # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
 
@@ -165,3 +166,40 @@ def train(model: DQN, dataset: str, num_episodes: int, strategy: int=config["STR
     
     # Return loss values during training
     return losses
+
+# Evaluate model on validation or test set and return profits
+# Returns a list of profits and total profit
+# NOTE only use strategy is if we want to compare against a baseline (buy and hold)
+def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["STRATEGY"], only_use_strategy:bool=False):
+    profits = []
+
+    # Load data and use defined set to evaluation set
+    train, valid, test = get_episode(dataset=dataset)
+    if evaluation_set == 'test':
+        evaluation = test
+    else:
+        evaluation = valid
+    
+    # Look at each time step in the evaluation data
+    for sample in evaluation:
+        # Get sample at time step
+        (state, next_state, price, prev_price, init_price) = sample
+
+        # Select action
+        action_index, num = select_action(model=model, state=state, strategy=strategy, only_use_strategy=only_use_strategy)
+
+        # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
+        action_value = model.action_index_to_value(action_index=action_index)
+
+        # Get reward given action_value and num
+        # TODO need to make sure our profit function works
+        profit = compute_profit(num_t=num, action_value=action_value, price=price,
+                                prev_price=prev_price, init_price=init_price)
+
+        # Add profits to list
+        profits.append(profit)
+    
+    # Return list of profits and total profit
+    return profits, sum(profits)
+
+
