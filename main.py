@@ -12,22 +12,12 @@ if __name__ == '__main__':
         config = yaml.load(ymlfile)
 
     model = DQN(NumQModel())
-    model, losses = train(model, num_episodes=10, dataset='gspc')
+    model, losses = train(model, num_episodes=100, dataset='gspc')
     plt.plot(list(range(len(losses))), list(map(math.log, losses)))
     plt.title("Log Losses")
     plt.show()
 
-    PATH = 'weights/numq_gspc_100.pt'
-    torch.save(model.target_net.state_dict(), PATH)
-    model = DQN(NumQModel())
-    model.policy_net.load_state_dict(torch.load(PATH))
-    model.transfer_weights()
-
-    model, losses = train(model, num_episodes=10, dataset='gspc')
-    plt.plot(list(range(len(losses))), list(map(math.log, losses)))
-    plt.title("Log Losses")
-    plt.show()
-
+    PATH = 'weights/not_numq_gspc_100.pt'
     torch.save(model.target_net.state_dict(), PATH)
 
     model = DQN(NumQModel())
