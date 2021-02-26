@@ -2,20 +2,11 @@ from typing import Tuple
 import numpy as np
 from torch import optim
 from torch.nn import functional as F
-from torch import Tensor
-import torch.nn as nn
 from torch.utils.data import DataLoader
+from models.models import Net
 
-class Net(nn.Module):
-    def __init__(self, size: int):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
-        self.out = nn.Linear(in_features=5, out_features=size, bias=True)
-
-    def forward(self, x: Tensor) -> Tensor:
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.out(x))
-        return x
+def compute_correlation(X: np.array, Y: np.array) -> float:
+    return np.corrcoef(x=X, y=Y)
 
 def train(model: Net, dataloaders: Tuple[DataLoader, DataLoader, DataLoader],
           epochs: int =10, learning_rate: float = 0.0001):
@@ -33,14 +24,13 @@ def train(model: Net, dataloaders: Tuple[DataLoader, DataLoader, DataLoader],
             # Optimize the model
             optimizer.zero_grad()
             loss.backward()
-            for param in model.parameters():
-                param.grad.data.clamp_(-1, 1)
+            # for param in model.parameters():
+            #     param.grad.data.clamp_(-1, 1)
             optimizer.step()
 
     #TODO: ADD Performance logging, eg. MSE on Valid and Train
 
     return model
-
 
 def compute_MSE(model: Net, X: np.array, Y: np.array):
     """
@@ -52,10 +42,15 @@ def compute_MSE(model: Net, X: np.array, Y: np.array):
     y_hat = model(X)
     return F.mse_loss(input=y_hat, target=Y)
 
-
 def MSE_pipeline(model):
+    # TODO: READ Data for an index and component stocks
+    stock_MSEs = { }
+    # TODO: FOR each pair, index, stock
+        # Train model
+        # compute MSE
+        # stock_MSEs['stock1'] = MSE
     pass
 
-def compute_correlation(X: np.array, Y: np.array) -> float:
-    return np.corrcoef(x=X, y=Y)
+
+
 
