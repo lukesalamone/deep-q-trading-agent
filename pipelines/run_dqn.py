@@ -11,7 +11,7 @@ import yaml
 
 from .build_batches import get_episode
 from utils.rewards import compute_reward, compute_profit
-from models.models import NumQModel, NumQDRegModel, DQN
+from models.models import *
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
@@ -59,8 +59,11 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], o
     else:
         action_index = torch.argmax(q).item()
     
-    # Multiply num by trading limit to get actual share trade volume
-    num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
+    # Multiply num by trading limit to get actual share trade volume given model method
+    if model.method == NUMDREG_ID:
+        num = config["SHARE_TRADE_LIMIT"] * num[0].item()
+    else:
+        num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
     
     # If confidence is high enough, return the action of the highest q value
     return action_index, num
@@ -70,9 +73,6 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     # Skip if memory length is not at least batch size
     if len(memory) < config["BATCH_SIZE"]:
         return None
-
-    # Initialize optimizer
-    optimizer = optim.Adam(model.policy_net.parameters(),lr=config["LR"])
 
     # Sample a batch from memory
     # (state, action_index, next_state, reward)
@@ -85,22 +85,52 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     reward_batch = torch.unsqueeze(torch.tensor(batch[2]), dim=1)
     next_state_batch = torch.stack(batch[3])
 
-    # TODO check shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 200), (BATCH_SIZE, 1) respectively
+    # Check shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 200), (BATCH_SIZE, 1) respectively
     assert state_batch.shape == (config["BATCH_SIZE"], 200)
     assert action_batch.shape == (config["BATCH_SIZE"], 1)
     assert reward_batch.shape == (config["BATCH_SIZE"], 1)
     assert next_state_batch.shape == (config["BATCH_SIZE"], 200)
 
-    # Get q values from policy net from state batch
-    # (we keep track of gradients for this model)
-    q_batch, num_batch = model.policy_net(state_batch)
-
-    # Get q values from target net from next states
-    # (we do NOT keep track of gradients for this model)
-    # TODO handle terminal state in build_episode and then here.
-    next_q_batch, next_num_batch = model.target_net(state_batch)
-
+    # TODO handle terminal state in build_episode and then here?
     # TODO check size of all outputs
+    # TODO masking?
+    # TODO detach target outputs?
+    # TODO need gradient clipping?
+    #  RESPONSE: I think we smooth l1 loss takes care of that
+    #  https://srome.github.io/A-Tour-Of-Gotchas-When-Implementing-Deep-Q-Networks-With-Keras-And-OpenAi-Gym/
+
+    # Optimize model given specified method
+    if model.method == NUMQ:
+        loss = optimize_numq(model=model, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+        return (loss, )
+    elif model.method == NUMDREG_AD or method == NUMDREG_ID:
+        # Optimize on step 1
+        model.policy_net.set_step(1)
+        model.target_net.set_step(1)
+        act_loss = optimize_numdreg(model=model, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+
+        # Optimize on step 2
+        model.policy_net.set_step(2)
+        model.target_net.set_step(2)
+        num_loss = optimize_numdreg(model=model, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+
+        # End to end...
+        model.policy_net.set_step(3)
+        model.target_net.set_step(3)
+        num_loss = optimize_numdreg(model=model, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+
+        return (act_loss, num_loss)
+    
+
+def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_batch):
+    # Initialize optimizer
+    optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
+
+    # Get q values from policy and target net from state batch (track gradients only for policy net)
+    q_batch, num_batch = model.policy_net(state_batch)
+    q_batch = q_batch.gather(1, action_batch)
+    next_q_batch, next_num_batch = model.target_net(state_batch)
+    next_q_batch = next_q_batch.max(1)[0].detach()
 
     # Compute the expected Q values
     expected_q_batch = reward_batch + (config["GAMMA"] * next_q_batch)
@@ -111,12 +141,45 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     # Clear gradients and update model parameters
     optimizer.zero_grad()
     loss.backward()
-    # TODO need gradient clipping?
-    #  RESPONSE: I think we smooth l1 loss takes care of that
-    #  https://srome.github.io/A-Tour-Of-Gotchas-When-Implementing-Deep-Q-Networks-With-Keras-And-OpenAi-Gym/
     optimizer.step()
 
     return loss.item()
+
+def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_batch):
+    # Initialize optimizer
+    optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
+
+    # Get q values from policy and target net from state batch (track gradients only for policy net)
+    q_batch, num_batch = model.policy_net(state_batch)
+    next_q_batch, next_num_batch = model.target_net(state_batch)
+
+    # Loss is the difference between the q values from the policy net and expected q values from the target net
+
+    # Compute the expected Q values and act loss
+    expected_q_batch = reward_batch + (config["GAMMA"] * next_q_batch)
+    act_loss = F.smooth_l1_loss(q_batch, expected_q_batch)
+
+    # Compute the expected num values and num loss
+    expected_num_batch = reward_batch + (config["GAMMA"] * next_num_batch)
+    num_loss = F.smooth_l1_loss(num_batch, expected_num_batch)
+
+    # Clear gradients and update model parameters
+    optimizer.zero_grad()
+
+    # Set loss given training step
+    if model.policy_net.step == 1:
+        loss = act_loss
+    elif model.policy_net.step == 2:
+        loss = num_loss
+    elif model.policy_net.step == 3:
+        loss = act_loss + num_loss
+
+    # Update model parameters
+    loss.backward()
+    optimizer.step()
+
+    return loss.item()
+
 
 # Train model on given training data
 def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATEGY"]):
@@ -124,6 +187,7 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
 
     optim_steps = 0
     losses = []
+    rewards = []
     replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
     # TODO need to figure out what episode should be
@@ -153,26 +217,31 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
 
             # Update model and increment optimization steps
             loss = optimize_model(model=model, memory=replay_memory)
+
             optim_steps += 1
 
             # If loss was returned, append to losses and printloss every 100 steps
             if loss and optim_steps % 100 == 0:
-                    losses.append(loss)
-                    print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
+                # Track rewards and losses
+                rewards.append(reward)
+                losses.append(loss)
+                print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
 
         # Update policy net with target net
-        model.transfer_weights()
+        if e % 1 == 0:
+            model.transfer_weights()
     
     print("Training complete")
     
     # Return loss values during training
-    return model, losses
+    return model, losses, rewards
 
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
 def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["STRATEGY"], only_use_strategy:bool=False):
     profits = []
+    running_profits = [0]
 
     # Load data and use defined set to evaluation set
     train, valid, test = get_episode(dataset=dataset)
@@ -198,6 +267,7 @@ def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["ST
 
         # Add profits to list
         profits.append(profit)
+        running_profits.append(running_profits[-1] + profit)
     
     # Return list of profits and total profit
-    return profits, sum(profits)
+    return profits, running_profits, sum(profits)

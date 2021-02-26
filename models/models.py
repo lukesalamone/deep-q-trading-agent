@@ -4,13 +4,36 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Tuple
 
+NUMQ = 0
+NUMDREG_AD = 1
+NUMDREG_ID = 2
+
 class DQN():
-    def __init__(self, architecture: nn.Module):
+    def __init__(self, method):
         self.BUY = 0
         self.HOLD = 1
         self.SELL = 2
-        self.policy_net = architecture
-        self.target_net = architecture
+
+        # Set method
+        self.method = method
+        
+        self.policy_net = None
+        self.target_net = None
+        
+        # Set architecture
+        if self.method == NUMQ:
+            self.policy_net = NumQModel()
+            self.target_net = NumQModel()
+        elif self.method == NUMDREG_AD:
+            m = NumDRegModel(NUMDREG_AD)
+            self.policy_net = m
+            self.target_net = m
+        elif self.method == NUMDREG_ID:
+            self.policy_net = NumDRegModel(NUMDREG_ID)
+            self.target_net = NumDRegModel(NUMDREG_ID)
+        
+        # Make sure they start with the same weights
+        self.transfer_weights()
 
     def transfer_weights(self):
         # TODO: Do we use TAU?
@@ -43,13 +66,16 @@ class NumQModel(nn.Module):
 
         return q, r
 
-#TODO: Edit to support AD - ID
-# Use a parameter AD/ID and edit fc_r and r in forward
-
-# There needs to be NUMQ
-class NumQDRegModel(nn.Module):
-    def __init__(self):
+class NumDRegModel(nn.Module):
+    def __init__(self, method):
         super().__init__()
+
+        # Set method
+        self.method = method
+
+        # Training step
+        self.step = 0
+
         # root
         self.fc1 = nn.Linear(in_features=200, out_features=100, bias=True)
 
@@ -61,20 +87,31 @@ class NumQDRegModel(nn.Module):
         # number branch
         self.fc2_num = nn.Linear(in_features=100, out_features=50, bias=True)
         self.fc3_num = nn.Linear(in_features=50, out_features=20, bias=True)
-        self.fc_r = nn.Linear(in_features=20, out_features=3, bias=True)
+        self.fc_r = nn.Linear(in_features=20, out_features=(3 if self.method == NUMDREG_AD else 1), bias=True)
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
-        # root
+        # Root
         x = F.relu(self.fc1(x))
 
-        # action branch
+        # Action branch
         x_act = F.relu(self.fc2_act(x))
         x_act = F.relu(self.fc3_act(x_act))
         q = self.fc_q(x_act)
 
-        # number branch
-        x_num = F.relu(self.fc2_num(x))
-        x_num = F.sigmoid(self.fc3_num(x_num))
-        r = F.softmax(self.fc_r(x_num))
+        if self.step == 1:
+            # Number branch based on q values
+            r = F.softmax(self.fc_q(F.sigmoid(x_act)))
+        else:
+            # Number branch
+            x_num = F.relu(self.fc2_num(x))
+            x_num = F.sigmoid(self.fc3_num(x_num))
+            # Output layer depends on method
+            if self.method == NUMDREG_ID:
+                r = F.sigmoid(self.fc_r(x_num))
+            else:
+                r = F.softmax(self.fc_r(x_num))
 
         return q, r
+    
+    def set_step(self, s):
+        self.step = s

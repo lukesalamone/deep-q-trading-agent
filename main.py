@@ -16,23 +16,34 @@ if __name__ == '__main__':
     # Get all config values and hyperparameters
     with open("config.yml", "r") as ymlfile:
         config = yaml.load(ymlfile)
+    
+    model = DQN(method=NUMQ)
+    model, losses, rewards = train(model, num_episodes=20, dataset='gspc')
 
-    model = DQN(NumQModel())
-    model, losses = train(model, num_episodes=100, dataset='gspc')
-    plt.plot(list(range(len(losses))), list(map(math.log, losses)))
+    plt.plot(list(range(len(losses))), list(map(lambda x:math.log(x[0]), losses)))
     plt.title("Log Losses")
     plt.show()
 
-    PATH = 'weights/not_numq_gspc_100.pt'
+    plt.plot(list(range(len(rewards))), rewards)
+    plt.title("Rewards")
+    plt.show()
+
+    """
+    PATH = 'weights/not_numq_gspc_20.pt'
     torch.save(model.target_net.state_dict(), PATH)
 
-    model = DQN(NumQModel())
+    model = DQN(NUMQ)
     model.policy_net.load_state_dict(torch.load(PATH))
     model.transfer_weights()
+    """
+    
 
-    profits, total_profits = evaluate(model, dataset='gspc', evaluation_set='valid', strategy=config["STRATEGY"], only_use_strategy=False)
+    profits, running_profits, total_profits = evaluate(model, dataset='gspc', evaluation_set='valid', strategy=config["STRATEGY"], only_use_strategy=False)
+    hold_profits, hold_running_profits, hold_total_profits = evaluate(model, dataset='gspc', evaluation_set='valid', strategy=config["STRATEGY"], only_use_strategy=True)
 
     print(f"TOTAL PROFITS : {total_profits}")
-    plt.plot(list(range(len(profits))), profits)
+    plt.plot(list(range(len(running_profits))), running_profits, label="Model strategy")
+    plt.plot(list(range(len(hold_running_profits))), hold_running_profits, label="Buy and hold")
+    plt.legend()
     plt.title("Profits")
     plt.show()
