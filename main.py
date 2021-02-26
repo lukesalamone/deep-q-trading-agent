@@ -17,7 +17,7 @@ if __name__ == '__main__':
     with open("config.yml", "r") as ymlfile:
         config = yaml.load(ymlfile)
     
-    model = DQN(method=NUMDREG_ID)
+    model = DQN(method=NUMQ)
     model, losses, rewards = train(model, num_episodes=10, dataset='gspc')
 
     plt.plot(list(range(len(losses))), list(map(lambda x:math.log(x[0]), losses)))

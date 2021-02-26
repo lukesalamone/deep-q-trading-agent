@@ -57,4 +57,3 @@ def MSE_pipeline(index, component_stocks):
         model = train(model=model, dataloaders=dataloaders)
         stock_MSEs['STOCK stock'] = compute_MSE(model=model, X=X, Y=Y)
     return stock_MSEs
-
