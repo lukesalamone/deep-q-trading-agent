@@ -4,6 +4,7 @@ from torch import optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from models.models import Net
+from utils.transfer_data import init_dataset
 
 def compute_correlation(X: np.array, Y: np.array) -> float:
     return np.corrcoef(x=X, y=Y)
@@ -42,15 +43,18 @@ def compute_MSE(model: Net, X: np.array, Y: np.array):
     y_hat = model(X)
     return F.mse_loss(input=y_hat, target=Y)
 
-def MSE_pipeline(model):
+def MSE_pipeline(index, component_stocks):
     # TODO: READ Data for an index and component stocks
     stock_MSEs = { }
-    # TODO: FOR each pair, index, stock
+    for stock in component_stocks:
+        dataloaders = init_dataset(stock_path='PLACEHOLDER', index_path='PLACEHOLDER', batch_size=32, fake=True)
+        _, valid, _ = dataloaders
         # Train model
-        # compute MSE
-        # stock_MSEs['stock1'] = MSE
-    pass
-
-
-
+        model = Net()
+        # place holders
+        X = np.array([0])
+        Y = np.array([0])
+        model = train(model=model, dataloaders=dataloaders)
+        stock_MSEs['STOCK stock'] = compute_MSE(model=model, X=X, Y=Y)
+    return stock_MSEs
 
