@@ -48,7 +48,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], o
 
     # Check (q.shape num.shape should both be (3,) respectively) here
     assert q.shape == (3, )
-    assert num.shape == (3, )
+    #assert num.shape == (3, )
 
     # Use predefined confidence if confidence is too low, indicating a confused market
     confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
@@ -61,7 +61,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], o
     
     # Multiply num by trading limit to get actual share trade volume given model method
     if model.method == NUMDREG_ID:
-        num = config["SHARE_TRADE_LIMIT"] * num[0].item()
+        num = config["SHARE_TRADE_LIMIT"] * num.item()
     else:
         num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
     
@@ -103,7 +103,7 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     if model.method == NUMQ:
         loss = optimize_numq(model=model, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
         return (loss, )
-    elif model.method == NUMDREG_AD or method == NUMDREG_ID:
+    elif model.method == NUMDREG_AD or model.method == NUMDREG_ID:
         # Optimize on step 1
         model.policy_net.set_step(1)
         model.target_net.set_step(1)
@@ -128,9 +128,9 @@ def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_bat
 
     # Get q values from policy and target net from state batch (track gradients only for policy net)
     q_batch, num_batch = model.policy_net(state_batch)
-    q_batch = q_batch.gather(1, action_batch)
+    q_batch = q_batch
     next_q_batch, next_num_batch = model.target_net(state_batch)
-    next_q_batch = next_q_batch.max(1)[0].detach()
+    next_q_batch = next_q_batch.detach()
 
     # Compute the expected Q values
     expected_q_batch = reward_batch + (config["GAMMA"] * next_q_batch)

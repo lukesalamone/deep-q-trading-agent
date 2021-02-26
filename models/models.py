@@ -25,9 +25,8 @@ class DQN():
             self.policy_net = NumQModel()
             self.target_net = NumQModel()
         elif self.method == NUMDREG_AD:
-            m = NumDRegModel(NUMDREG_AD)
-            self.policy_net = m
-            self.target_net = m
+            self.policy_net = NumDRegModel(NUMDREG_AD)
+            self.target_net = NumDRegModel(NUMDREG_AD)
         elif self.method == NUMDREG_ID:
             self.policy_net = NumDRegModel(NUMDREG_ID)
             self.target_net = NumDRegModel(NUMDREG_ID)
