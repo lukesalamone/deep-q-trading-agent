@@ -6,6 +6,12 @@ import math
 import os
 import yaml
 
+def run_experiment():
+    # creates model
+    #
+    pass
+
+
 if __name__ == '__main__':
     # Get all config values and hyperparameters
     with open("config.yml", "r") as ymlfile:
