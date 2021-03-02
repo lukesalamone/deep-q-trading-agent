@@ -11,6 +11,14 @@ def run_experiment():
     #
     pass
 
+def load_weights(model:DQN, IN_PATH):
+    model.policy_net.load_state_dict(torch.load(PATH))
+    model.transfer_weights()
+    return model
+
+def save_weights(model:DQN, OUT_PATH):
+    torch.save(model.target_net.state_dict(), OUT_PATH)
+    return
 
 if __name__ == '__main__':
     # Get all config values and hyperparameters
@@ -39,7 +47,6 @@ if __name__ == '__main__':
     model.policy_net.load_state_dict(torch.load(PATH))
     model.transfer_weights()
     """
-    
 
     profits, running_profits, total_profits = evaluate(model, dataset='gspc', evaluation_set='test', strategy=config["STRATEGY"], only_use_strategy=False)
     hold_profits, hold_running_profits, hold_total_profits = evaluate(model, dataset='gspc', evaluation_set='test', strategy=config["STRATEGY"], only_use_strategy=True)
