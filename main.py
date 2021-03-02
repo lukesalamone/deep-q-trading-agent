@@ -21,7 +21,7 @@ if __name__ == '__main__':
     model, losses, rewards = train(model, num_episodes=10, dataset='gspc')
 
     plt.plot(list(range(len(losses))), losses)
-    plt.title("Log Losses")
+    plt.title("Losses")
     plt.show()
 
     plt.plot(list(range(len(rewards))), rewards)
