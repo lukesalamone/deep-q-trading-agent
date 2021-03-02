@@ -41,6 +41,12 @@ def _build_episode(prices:List[float]) -> List[Tuple[Tensor, Tensor, float, floa
     episode = []
     today_prices = torch.Tensor(prices[1:])
     yesterday_prices = torch.Tensor(prices[:-1])
+
+    # Move to cuda if available
+    if torch.cuda.is_available():
+        today_prices = today_prices.cuda()
+        yesterday_prices = yesterday_prices.cuda()
+    
     states = today_prices - yesterday_prices
 
     for i in range(len(states) - config["LOOKBACK"]):
