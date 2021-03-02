@@ -205,13 +205,17 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
 
     # Run for the defined number of episodes
     for e in range(episodes):
+        #print("EPISODE ", 1)
+        #print("===========")
+
         e_losses = []
         e_rewards = []
         e_profit = 0
         # Look at each time step in the train data
-        for sample in train:
+        for t, sample in enumerate(train):
             # Get the sample at this time step
             (state, next_state, price, prev_price, init_price) = sample
+
 
             # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
@@ -222,6 +226,8 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             # Get reward given action_value and num
             reward = compute_reward(num_t=num, action_value=action_value, price=price,
                                     prev_price=prev_price, init_price=init_price)
+
+           
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)

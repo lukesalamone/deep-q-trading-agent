@@ -13,7 +13,7 @@ class DQN():
         self.BUY = 0
         self.HOLD = 1
         self.SELL = 2
-
+        
         # Set method
         self.method = method
         

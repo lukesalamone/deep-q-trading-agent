@@ -86,7 +86,7 @@ if __name__ == '__main__':
     experiment_args = {
         'method': NUMQ,
         'dataset': 'gspc',
-        'train_model': False,
+        'train_model': True,
         'eval_model': True,
         'eval_set': 'test',
         'load_model': True,
