@@ -126,17 +126,22 @@ def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_bat
     # Initialize optimizer
     optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
 
-    # Get q values from policy and target net from state batch (track gradients only for policy net)
+    # Get q values from policy net (track gradients only for policy net)
     q_batch, num_batch = model.policy_net(state_batch)
-    q_batch = q_batch
-    next_q_batch, next_num_batch = model.target_net(state_batch)
-    next_q_batch = next_q_batch.detach()
 
-    # Compute the expected Q values
-    expected_q_batch = reward_batch + (config["GAMMA"] * next_q_batch)
+    # Get q values from target net with next states
+    next_q_batch, next_num_batch = model.target_net(next_state_batch)
+    # Get max q values for next state
+    next_max_q_batch, next_max_q_i_batch  = next_q_batch.detach().max(dim=1)
+
+    # Compute the expected Q values...
+    expected_q_batch = q_batch.clone().detach()
+    # Fill q values from q batch from index of the taken action to the updated q value using the reward and next max q value
+    for i in range(expected_q_batch.shape[0]):
+        expected_q_batch[i, action_batch[i]] = reward_batch[i] + (config["GAMMA"] * next_max_q_batch[i])
 
     # Loss is the difference between the q values from the policy net and expected q values from the target net
-    loss = F.smooth_l1_loss(q_batch, expected_q_batch)
+    loss = F.smooth_l1_loss(expected_q_batch, q_batch)
 
     # Clear gradients and update model parameters
     optimizer.zero_grad()
@@ -196,6 +201,8 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
 
     # Run for the defined number of episodes
     for e in range(num_episodes):
+        e_losses = []
+        e_rewards = []
         # Look at each time step in the train data
         for sample in train:
             # Get the sample at this time step
@@ -221,11 +228,16 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
             optim_steps += 1
 
             # If loss was returned, append to losses and printloss every 100 steps
-            if loss and optim_steps % 100 == 0:
+            if loss and optim_steps % 200 == 0:
                 # Track rewards and losses
-                rewards.append(reward)
-                losses.append(loss)
-                print("Episode: {}, Loss: {}".format(e+1, losses[-1]))
+                e_rewards.append(reward)
+                # TODO rework for numdreg
+                e_losses.append(loss[0])
+                print("Episode: {}, Loss: {}".format(e+1, e_losses[-1]))
+
+        # Update losses and rewards list with average of each over episode
+        losses.append(sum(e_losses) / len(e_losses))
+        rewards.append(sum(e_rewards) / len(e_rewards))
 
         # Update policy net with target net
         if e % 1 == 0:

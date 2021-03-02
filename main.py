@@ -20,7 +20,7 @@ if __name__ == '__main__':
     model = DQN(method=NUMQ)
     model, losses, rewards = train(model, num_episodes=10, dataset='gspc')
 
-    plt.plot(list(range(len(losses))), list(map(lambda x:math.log(x[0]), losses)))
+    plt.plot(list(range(len(losses))), losses)
     plt.title("Log Losses")
     plt.show()
 
