@@ -16,9 +16,12 @@ if __name__ == '__main__':
     # Get all config values and hyperparameters
     with open("config.yml", "r") as ymlfile:
         config = yaml.load(ymlfile)
-    
+
+    PATH = 'weights/numq_gspc_30.pt'
     model = DQN(method=NUMQ)
-    model, losses, rewards = train(model, num_episodes=20, dataset='gspc')
+    model.policy_net.load_state_dict(torch.load(PATH))
+    model.transfer_weights()
+    model, losses, rewards = train(model, dataset='gspc')
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
@@ -28,10 +31,10 @@ if __name__ == '__main__':
     plt.title("Rewards")
     plt.show()
 
-    """
-    PATH = 'weights/not_numq_gspc_20.pt'
-    torch.save(model.target_net.state_dict(), PATH)
+    OUT_PATH = 'weights/numq_gspc_60.pt'
+    torch.save(model.target_net.state_dict(), OUT_PATH)
 
+    """
     model = DQN(NUMQ)
     model.policy_net.load_state_dict(torch.load(PATH))
     model.transfer_weights()
