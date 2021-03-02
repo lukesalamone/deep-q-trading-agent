@@ -193,6 +193,7 @@ def train(model: DQN, dataset:str, num_episodes:int, use_valid:bool=config["USE_
     optim_steps = 0
     losses = []
     rewards = []
+    total_profits = []
     replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
     # TODO need to figure out what episode should be
@@ -206,6 +207,7 @@ def train(model: DQN, dataset:str, num_episodes:int, use_valid:bool=config["USE_
     for e in range(num_episodes):
         e_losses = []
         e_rewards = []
+        e_profit = 0
         # Look at each time step in the train data
         for sample in train:
             # Get the sample at this time step
@@ -228,7 +230,11 @@ def train(model: DQN, dataset:str, num_episodes:int, use_valid:bool=config["USE_
             # Update model and increment optimization steps
             loss = optimize_model(model=model, memory=replay_memory)
 
+            # Update step
             optim_steps += 1
+
+            # Update profit
+            e_profit += compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
 
             # If loss was returned, append to losses and printloss every 100 steps
             if loss and optim_steps % 200 == 0:
@@ -241,15 +247,17 @@ def train(model: DQN, dataset:str, num_episodes:int, use_valid:bool=config["USE_
         # Update losses and rewards list with average of each over episode
         losses.append(sum(e_losses) / len(e_losses))
         rewards.append(sum(e_rewards) / len(e_rewards))
+        total_profits.append(e_profit)
 
         # Update policy net with target net
         if e % 1 == 0:
+            # TODO NEED A TAU
             model.transfer_weights()
     
     print("Training complete")
     
     # Return loss values during training
-    return model, losses, rewards
+    return model, losses, rewards, total_profits
 
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit

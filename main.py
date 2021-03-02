@@ -18,7 +18,7 @@ if __name__ == '__main__':
         config = yaml.load(ymlfile)
     
     model = DQN(method=NUMQ)
-    model, losses, rewards = train(model, num_episodes=20, dataset='gspc')
+    model, losses, rewards, profits = train(model, num_episodes=10, dataset='gspc')
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
@@ -26,6 +26,10 @@ if __name__ == '__main__':
 
     plt.plot(list(range(len(rewards))), rewards)
     plt.title("Rewards")
+    plt.show()
+
+    plt.plot(list(range(len(profits))), profits)
+    plt.title("Total Profits")
     plt.show()
 
     """
