@@ -14,12 +14,12 @@ def clean_csv(path_in: str, path_out: str, keep_cols: List[str]):
     return df.to_csv(path_out, index=False)
 
 def clean():
-    for symbol in kospi:
-        symbol = f'{symbol}.KS'
-        print(f'cleaning symbol {symbol} . . .')
-        path_in = f'../raw/kospi/{symbol}.csv'
-        path_out = f'../stock_data/kospi/{symbol}.csv'
-        clean_csv(path_in, path_out, keep_cols)
+    # for symbol in kospi:
+    symbol = '^KS11'
+    print(f'cleaning symbol {symbol} . . .')
+    path_in = f'../raw/kospi/{symbol}.csv'
+    path_out = f'../stock_data/kospi/{symbol}.csv'
+    clean_csv(path_in, path_out, keep_cols)
 
 if __name__ == '__main__':
     # main()
