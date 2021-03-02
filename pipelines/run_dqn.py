@@ -85,13 +85,6 @@ def optimize_model(model: DQN, memory: ReplayMemory):
     reward_batch = torch.unsqueeze(torch.tensor(batch[2]), dim=1)
     next_state_batch = torch.stack(batch[3])
 
-    # Move to cuda if available
-    if torch.cuda.is_available():
-        state_batch = state_batch.cuda()
-        action_batch = action_batch.cuda()
-        reward_batch = reward_batch.cuda()
-        next_state_batch = next_state_batch.cuda()
-
     # Check shape is (BATCH_SIZE, 200), (BATCH_SIZE, 1), (BATCH_SIZE, 200), (BATCH_SIZE, 1) respectively
     assert state_batch.shape == (config["BATCH_SIZE"], 200)
     assert action_batch.shape == (config["BATCH_SIZE"], 1)
@@ -202,11 +195,6 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
     rewards = []
     total_profits = []
     replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
-
-    # Move model to cuda if available
-    if torch.cuda.is_available():
-        model.policy_net.cuda()
-        model.target_net.cuda()
 
     # TODO need to figure out what episode should be
     # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
