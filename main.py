@@ -18,7 +18,7 @@ if __name__ == '__main__':
         config = yaml.load(ymlfile)
     
     model = DQN(method=NUMQ)
-    model, losses, rewards = train(model, num_episodes=10, dataset='gspc')
+    model, losses, rewards = train(model, num_episodes=20, dataset='gspc')
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
@@ -38,8 +38,8 @@ if __name__ == '__main__':
     """
     
 
-    profits, running_profits, total_profits = evaluate(model, dataset='gspc', evaluation_set='valid', strategy=config["STRATEGY"], only_use_strategy=False)
-    hold_profits, hold_running_profits, hold_total_profits = evaluate(model, dataset='gspc', evaluation_set='valid', strategy=config["STRATEGY"], only_use_strategy=True)
+    profits, running_profits, total_profits = evaluate(model, dataset='gspc', evaluation_set='test', strategy=config["STRATEGY"], only_use_strategy=False)
+    hold_profits, hold_running_profits, hold_total_profits = evaluate(model, dataset='gspc', evaluation_set='test', strategy=config["STRATEGY"], only_use_strategy=True)
 
     print(f"TOTAL PROFITS : {total_profits}")
     plt.plot(list(range(len(running_profits))), running_profits, label="Model strategy")

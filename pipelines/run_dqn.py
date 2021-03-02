@@ -187,7 +187,7 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 
 
 # Train model on given training data
-def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATEGY"]):
+def train(model: DQN, dataset:str, num_episodes:int, use_valid:bool=config["USE_VALID"],strategy:int=config["STRATEGY"]):
     print("Training model on {}...".format(dataset))
 
     optim_steps = 0
@@ -198,6 +198,9 @@ def train(model: DQN, dataset:str, num_episodes:int, strategy:int=config["STRATE
     # TODO need to figure out what episode should be
     # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
     train, valid, test = get_episode(dataset=dataset)
+
+    if use_valid:
+        train = train + valid
 
     # Run for the defined number of episodes
     for e in range(num_episodes):
