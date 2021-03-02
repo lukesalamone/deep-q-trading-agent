@@ -132,7 +132,7 @@ def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_bat
     # Get q values from target net with next states
     next_q_batch, next_num_batch = model.target_net(next_state_batch)
     # Get max q values for next state
-    next_max_q_batch, next_max_q_i_batch  = next_q_batch.detach().max(dim=1)
+    next_max_q_batch, next_max_q_i_batch = next_q_batch.detach().max(dim=1)
 
     # Compute the expected Q values...
     expected_q_batch = q_batch.clone().detach()
