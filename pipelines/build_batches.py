@@ -4,10 +4,12 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 import yaml
+import os
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile)
+
 
 def _load_from_file(dataset:str) -> List[List[float]]:
     """
@@ -71,3 +73,9 @@ def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, fl
     """
     datasets = _load_from_file(dataset)
     return [_build_episode(ds) for ds in datasets]
+
+if __name__=="__main__":
+    i = 'gspc'
+    t = '^GSPC'
+    a = _read_csv(i, t)
+    print(a.head())

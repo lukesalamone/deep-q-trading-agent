@@ -11,7 +11,7 @@ THRESHOLD: 0.2
 
 # Training
 USE_VALID: True
-EPISODES: 30
+EPISODES: 5
 LR: 0.0001
 LR_NUMDREGAD: 0.0000001
 LR_NUMDREGID: 0.00001
@@ -20,3 +20,14 @@ GAMMA: 0.85
 #TODO: Do we need this and what do we set it to?
 MEMORY_CAPACITY: 256
 MIN_MEMORY_CAPACITY: 200
+
+# DATA
+DATA_DIRECTORY: 'stock_data'
+INDEX_TICKERS: { '^GSPC', '^HSI', '^KOSPI' }
+INDEX_SPLITS: {
+  "gspc": {
+    "train" : ["1987-01-02", "2002-11-04"],
+    "valid" : ["2002-11-05", "2006-08-10"],
+    "test" : ["2006-08-11", "2017-12-31"]
+  }
+}
