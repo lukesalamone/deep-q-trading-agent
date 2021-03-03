@@ -41,18 +41,19 @@ class FinanceEnvironment:
 
     def step(self):
         """
-
-        :return: state at time_step
+        Move forward one step in time and advance all relevant variables
+        :return: state at time_step and done flag
         """
-        self.time_step += 1
-
         self.cur_state = self.states[self.time_step:self.lookback+self.time_step]
         self.next_state = self.states[self.time_step + 1:self.lookback + self.time_step + 1]
         self.cur_price = self.today_prices[self.lookback + self.time_step- 1]
         self.cur_prev_price = self.yesterday_prices[self.lookback + self.time_step]
         self.init_price = self.today_prices[self.time_step]
 
+        # TODO Simon may have better logic here
         done = len(self.today_prices) < self.time_step
+
+        self.time_step += 1
 
         return self.cur_state, done
 

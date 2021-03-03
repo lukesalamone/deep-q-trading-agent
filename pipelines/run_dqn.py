@@ -252,7 +252,7 @@ def train(model: DQN, index: str, dataset: str, episodes: int = config["EPISODES
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
-def evaluate(model: DQN, dataset: str, evaluation_set: str, strategy: int = config["STRATEGY"],
+def evaluate(model: DQN, index:str, dataset: str, evaluation_set: str, strategy: int = config["STRATEGY"],
              only_use_strategy: bool = False):
     profits = []
     running_profits = [0]
@@ -264,10 +264,13 @@ def evaluate(model: DQN, dataset: str, evaluation_set: str, strategy: int = conf
     else:
         evaluation = valid
 
+
+    env = make_env(index, dataset, config['MEMORY_CAPACITY'], config['LOOKBACK'])
+    env.start_episode()
+
     # Look at each time step in the evaluation data
-    for sample in evaluation:
-        # Get sample at time step
-        (state, next_state, price, prev_price, init_price) = sample
+    for i in count():
+        state, done = env.step()
 
         # Select action
         action_index, num = select_action(model=model, state=state, strategy=strategy,
@@ -278,7 +281,7 @@ def evaluate(model: DQN, dataset: str, evaluation_set: str, strategy: int = conf
 
         # Get reward given action_value and num
         # TODO need to make sure our profit function works
-        profit = compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
+        profit, reward = env.profit_and_reward(action=action_value, num_t=num)
 
         # Add profits to list
         profits.append(profit)
