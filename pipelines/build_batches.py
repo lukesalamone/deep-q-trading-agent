@@ -5,6 +5,7 @@ from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 import yaml
 import os
+import pandas as pd
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
@@ -73,6 +74,12 @@ def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, fl
     """
     datasets = _load_from_file(dataset)
     return [_build_episode(ds) for ds in datasets]
+
+
+def load_prices(index, symbol):
+    path = config["STOCK_DATA_PATH"]
+    return pd.read_csv(os.path.join(path, index, symbol))
+
 
 if __name__=="__main__":
     i = 'gspc'

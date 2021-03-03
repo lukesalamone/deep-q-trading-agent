@@ -1,6 +1,7 @@
 # Data processing
 RAW_DATA_PATH: 'data'
 CLEAN_DATA_PATH: 'data_clean'
+STOCK_DATA_PATH: 'stock_data'
 ALLOWED_DATASETS: ['gspc', 'hsi', 'ks11', 'sx5e']
 LOOKBACK: 200
 

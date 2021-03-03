@@ -1,21 +1,120 @@
+from collections import deque
+from typing import Tuple
+import torch
+from torch import Tensor
+import random
 import numpy as np
 import pandas as pd
 import yaml
 import os
 
 from .build_batches import load_prices
+from utils.rewards import compute_reward, compute_profit
 
 class FinanceEnvironment:
-    def __init__(self, prices):
-        self.prices = prices
+    def __init__(self, price_history, mem_cap, lookback):
+        self.price_history = price_history
         self.time_step = 0
+        self.profits = []
+        self.replay_memory = ReplayMemory(capacity=mem_cap)
+        self.lookback = lookback
+
+        price_col_name = self.price_history.columns[1]
+        prices = torch.tensor(self.price_history[price_col_name].to_numpy())
+
+        self.today_prices = torch.Tensor(prices[1:])
+        self.yesterday_prices = torch.Tensor(prices[:-1])
+        self.states = self.today_prices - self.yesterday_prices
+
+    def start_episode(self):
+        self.time_step = 0
+        self.episode_losses = []
+        self.episode_rewards = []
+        self.episode_profit = 0
+
+        self.cur_state = self.states[0:self.lookback]
+        self.next_state = self.states[1:self.lookback + 1]
+        self.cur_price = self.today_prices[self.lookback - 1]
+        self.cur_prev_price = self.yesterday_prices[self.lookback]
+        self.init_price = self.today_prices[0]
+
 
     def step(self):
+        """
+
+        :return: state at time_step
+        """
         self.time_step += 1
 
-def make_env(symbol):
-    prices = load_prices(symbol)
-    return FinanceEnvironment(prices)
+        self.cur_state = self.states[self.time_step:self.lookback+self.time_step]
+        self.next_state = self.states[self.time_step + 1:self.lookback + self.time_step + 1]
+        self.cur_price = self.today_prices[self.lookback + self.time_step- 1]
+        self.cur_prev_price = self.yesterday_prices[self.lookback + self.time_step]
+        self.init_price = self.today_prices[self.time_step]
+
+        done = len(self.today_prices) < self.time_step
+
+        return self.cur_state, done
+
+    def add_profit(self, profit):
+        self.episode_profit += profit
+
+    def add_loss(self, loss):
+        self.episode_losses.append(loss)
+
+    def profit_and_reward(self, action, num):
+        self.cur_action = action
+        self.cur_num = num
+
+        profit = compute_profit(num_t=num,
+                       action_value=action,
+                       price=self.cur_price,
+                       prev_price=self.cur_prev_price)
+
+        reward = compute_reward(num_t=num,
+                                action_value=action,
+                                price=self.cur_price,
+                                prev_price=self.cur_prev_price,
+                                init_price=self.init_price)
+
+        self.cur_reward = reward
+
+        self.episode_rewards.append(reward)
+        self.episode_profit += profit
+        return profit, reward
+
+
+    def update_replay_memory(self):
+        self.replay_memory.update(
+            (self.cur_state, self.cur_action, self.cur_reward, self.cur_next_state)
+        )
+
+    def on_episode_end(self):
+        avg_loss = sum(self.episode_losses) / len(self.episode_losses)
+        avg_reward = sum(self.episode_rewards) / len(self.episode_rewards)
+        return avg_loss, avg_reward, self.episode_profit
+
+class ReplayMemory(object):
+    def __init__(self, capacity):
+        self.memory = deque(maxlen=capacity)
+
+    def update(self, transition: Tuple[Tensor, int, Tensor, float]):
+        """
+        Saves a transition
+        :param transition: (state, action_index, next_state, reward)
+        :return:
+        """
+        self.memory.append(transition)
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+
+def make_env(index, symbol, mem_cap, lookback):
+    prices = load_prices(index, symbol)
+    return FinanceEnvironment(prices, mem_cap, lookback)
 
 
 # Get all config values and hyperparameters
