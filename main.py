@@ -57,7 +57,7 @@ def run_experiment(**kwargs):
     model = DQN(method=experiment_args['method'])
 
     if kwargs['load_model'] and kwargs['IN_PATH']:
-        load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
+        model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
 
     if kwargs['train_model'] and kwargs['dataset']:
         model, losses, rewards, profits = train(model, dataset=kwargs['dataset'])
@@ -89,10 +89,10 @@ if __name__ == '__main__':
         'train_model': True,
         'eval_model': True,
         'eval_set': 'test',
-        'load_model': True,
-        'IN_PATH': 'weights/numq_gspc_60.pt',
-        'save_model': False,
-        'OUT_PATH': 'weights/numq_gspc_90.pt'
+        'load_model': False,
+        'IN_PATH': 'weights/numq_gspc_30.pt',
+        'save_model': True,
+        'OUT_PATH': 'weights/numq_gspc_30.pt'
     }
 
     run_experiment(**experiment_args)
