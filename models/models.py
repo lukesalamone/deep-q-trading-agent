@@ -8,6 +8,7 @@ NUMQ = 0
 NUMDREG_AD = 1
 NUMDREG_ID = 2
 
+
 class DQN():
     def __init__(self, method):
         self.BUY = 0
@@ -16,10 +17,10 @@ class DQN():
 
         # Set method
         self.method = method
-        
+
         self.policy_net = None
         self.target_net = None
-        
+
         # Set architecture
         if self.method == NUMQ:
             self.policy_net = NumQModel()
@@ -30,7 +31,7 @@ class DQN():
         elif self.method == NUMDREG_ID:
             self.policy_net = NumDRegModel(NUMDREG_ID)
             self.target_net = NumDRegModel(NUMDREG_ID)
-        
+
         # Make sure they start with the same weights
         self.transfer_weights()
 
@@ -46,6 +47,7 @@ class DQN():
         :return: 1 - action index (BUY=1, HOLD=0, SELL=-1)
         """
         return 1 - action_index
+
 
 class NumQModel(nn.Module):
     def __init__(self):
@@ -64,6 +66,7 @@ class NumQModel(nn.Module):
         r = F.softmax(self.fc_q(F.sigmoid(x)))
 
         return q, r
+
 
 class NumDRegModel(nn.Module):
     def __init__(self, method):
@@ -111,7 +114,7 @@ class NumDRegModel(nn.Module):
                 r = F.softmax(self.fc_r(x_num))
 
         return q, r
-    
+
     def set_step(self, s):
         self.step = s
 
