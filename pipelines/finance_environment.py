@@ -11,51 +11,69 @@ import os
 from .build_batches import load_prices
 from utils.rewards import compute_reward, compute_profit
 
+# Get all config values and hyperparameters
+with open("config.yml", "r") as ymlfile:
+    config = yaml.load(ymlfile)
+
 class FinanceEnvironment:
-    def __init__(self, price_history, mem_cap, lookback):
+    def __init__(self, price_history: pd.DataFrame, mem_cap:int, index: str, task:str, lookback: int):
+        self.start_date, self.end_date = config["INDEX_SPLITS"][index][task]
         self.price_history = price_history
-        self.time_step = 0
+        self.lookback = lookback
+        self.action_space = (-1, 0, 1)
+
+        # pad using start date and set time_step at lookback + start_index
         self.profits = []
         self.replay_memory = ReplayMemory(capacity=mem_cap)
-        self.lookback = lookback
 
-        price_col_name = self.price_history.columns[1]
-        prices = torch.tensor(self.price_history[price_col_name].to_numpy())
+        self.date_column, self.price_column = self.price_history.columns
+        self.init_prices()
+        self.init_episode()
 
-        self.today_prices = torch.Tensor(prices[1:])
-        self.yesterday_prices = torch.Tensor(prices[:-1])
-        self.states = self.today_prices - self.yesterday_prices
+    def init_prices(self):
+        # we get the start index based on start_date.
+        # this is useful if you are testing, then set start date to that date.
+        start_index = self.price_history['Date'].get_loc[self.start_date]
 
-    def start_episode(self):
-        self.time_step = 0
+        # if lookback > t we are in trouble,
+        # so we pad this dataframe with rows identical to the first row
+        padding = self.price_history.at[0] * self.lookback
+        self.price_history = pd.concat([padding, self.price_history], axis=1, ignore_index=True)
+        self.historical_price_differences = self.price_history[self.price_column].diff(1)
+
+        # update step value because of padding and start index
+        self.time_step = self.lookback + start_index
+
+    def init_episode(self):
         self.episode_losses = []
         self.episode_rewards = []
         self.episode_profit = 0
 
-        self.cur_state = self.states[0:self.lookback]
-        self.next_state = self.states[1:self.lookback + 1]
-        self.cur_price = self.today_prices[self.lookback - 1]
-        self.cur_prev_price = self.yesterday_prices[self.lookback]
-        self.init_price = self.today_prices[0]
-
-
     def step(self):
-        """
-        Move forward one step in time and advance all relevant variables
-        :return: state at time_step and done flag
-        """
-        self.cur_state = self.states[self.time_step:self.lookback+self.time_step]
-        self.next_state = self.states[self.time_step + 1:self.lookback + self.time_step + 1]
-        self.cur_price = self.today_prices[self.lookback + self.time_step- 1]
-        self.cur_prev_price = self.yesterday_prices[self.lookback + self.time_step]
-        self.init_price = self.today_prices[self.time_step]
+        # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-lookback
+        self.price = self.price_history[self.price_column].at[self.time_step]
+        self.prev_price = self.price_history[self.price_column].at[self.time_step - 1]
+        self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
 
-        # TODO Simon may have better logic here
-        done = len(self.today_prices) < self.time_step
+        # get the state as the day to day price differences from timestep-n to timestep
+        state = self.historical_price_differences.loc[self.time_step - self.lookback : self.time_step]
+        # get the next state
+        next_state = self.historical_price_differences.loc[self.time_step - self.lookback + 1 : self.time_step + 1]
 
+        # cast them as tensors
+        self.state = torch.Tensor(state)
+        self.next_state = torch.Tensor(next_state)
+
+        assert self.state.size() == (self.lookback, 1)
+        assert self.next_state.size() == (self.lookback, 1)
+
+        # check the date at index step.
+        # If it's the end date, we are at the end of the episode
+        self.end = self.price_history[self.date_column].at[self.time_step] == self.end_date
+
+        # increment timestep
         self.time_step += 1
 
-        return self.cur_state, done
 
     def add_profit(self, profit):
         self.episode_profit += profit
@@ -63,31 +81,35 @@ class FinanceEnvironment:
     def add_loss(self, loss):
         self.episode_losses.append(loss)
 
-    def profit_and_reward(self, action, num):
-        self.cur_action = action
-        self.cur_num = num
+    def profit_and_reward(self, action: int, num):
+
+        self.action = action
+        self.num_t = num
+
+        action_value = self.action_space[action]
 
         profit = compute_profit(num_t=num,
-                       action_value=action,
-                       price=self.cur_price,
-                       prev_price=self.cur_prev_price)
+                                action_value=action_value,
+                                price=self.price,
+                                prev_price=self.prev_price)
 
         reward = compute_reward(num_t=num,
-                                action_value=action,
-                                price=self.cur_price,
-                                prev_price=self.cur_prev_price,
+                                action_value=action_value,
+                                price=self.price,
+                                prev_price=self.prev_price,
                                 init_price=self.init_price)
 
-        self.cur_reward = reward
+        self.reward = reward
 
         self.episode_rewards.append(reward)
         self.episode_profit += profit
+
         return profit, reward
 
 
     def update_replay_memory(self):
         self.replay_memory.update(
-            (self.cur_state, self.cur_action, self.cur_reward, self.cur_next_state)
+            (self.state, self.action, self.reward, self.next_state)
         )
 
     def on_episode_end(self):
@@ -99,10 +121,10 @@ class ReplayMemory(object):
     def __init__(self, capacity):
         self.memory = deque(maxlen=capacity)
 
-    def update(self, transition: Tuple[Tensor, int, Tensor, float]):
+    def update(self, transition: Tuple[Tensor, int, float, Tensor]):
         """
         Saves a transition
-        :param transition: (state, action_index, next_state, reward)
+        :param transition: (state, action_index, reward, next_state)
         :return:
         """
         self.memory.append(transition)
@@ -113,65 +135,13 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-def make_env(index, symbol, mem_cap, lookback):
-    prices = load_prices(index, symbol)
-    return FinanceEnvironment(prices, mem_cap, lookback)
-
-
-# Get all config values and hyperparameters
-with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
-
-def _read_csv(index: str, ticker: str) -> pd.DataFrame:
+def make_env(index: str, symbol: str, task:str, mem_cap: int, lookback:int):
     """
-    input an index and the ticker. read csv data
-    :param index:
-    :param ticker:
+    :param index: gspc, hsi, etc.
+    :param symbol: Ticker
+    :param mem_cap: Memory Replay Capacity
+    :param lookback: how many days we look back for prices
     :return:
     """
-    file_name = f"{index}/{ticker}.csv"
-    file_path = os.path.join(config["DATA_DIRECTORY"], file_name)
-    return pd.read_csv(file_path)
-
-def _get_state(prices: pd.DataFrame, step: int, n: int, price_col:str, end_date: str, start_date: str=''):
-    """
-    :param prices: price data for this stock
-    :param step: Timestep t
-    :param n: LOOKBACK
-    :param price_col: column corresponding to closing trade price in the df (differs for eurostoxx) #TODO: Homogenize data
-    :param end_date: date at which we end the episode
-    :param start_date: date at which we end the episode
-    :return:
-    """
-    # TODO: DISCUSS FACT THAT THIS REQUIRES KEEPING FULL CSV IN MEMORY
-    #  Maybe we can just return restricted dataframe from read_csv
-    #  eg. df = read_csv => smaller_df = keep_dates(df)
-    #  also if we do this we dont need the dates to determine the end of an episode
-
-    # initialize end
-    end = False
-    # we get the start index based on start_date.
-    # this is useful if you are testing, then set start date to that date.
-    start_index = prices['Date'].get_loc[start_date] if start_date else 0
-
-    # if lookback > n we are in trouble,
-    # so we pad this dataframe with rows identical to the first row
-    padding = prices.at[0]*n
-    prices = pd.concat([padding, prices], axis=1, ignore_index=True)
-
-    # update step value because of padding and start index
-    step = step + n + start_index
-
-    # look up price, prev price, init price in df at indices step, step-1, step-n
-    p_t = prices[price_col].at[step]
-    p_t_prev = prices[price_col].at[step-1]
-    p_init = prices[price_col].at[step-n]
-
-    # take the difference in prices along the column for indexes step-n to step
-    s_t = prices[price_col].diff(1).loc[step-n:step]
-
-    # check the date at index step.
-    # If it's the end date, we are at the end of the episode
-    if prices['Date'].at[step] == end_date:
-        end = True
-    return p_t, p_t_prev, p_init, np.array(s_t), end
+    prices = load_prices(index=index, symbol=symbol)
+    return FinanceEnvironment(price_history=prices, mem_cap=mem_cap, index=index, task=task, lookback=lookback)
