@@ -9,7 +9,7 @@ import pandas as pd
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 
 def _load_from_file(dataset:str) -> List[List[float]]:

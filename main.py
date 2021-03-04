@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import yaml
 
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 def load_weights(model:DQN, IN_PATH):
     model.policy_net.load_state_dict(torch.load(IN_PATH))

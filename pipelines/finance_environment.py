@@ -11,7 +11,7 @@ from .build_batches import load_prices
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 class FinanceEnvironment:
     def __init__(self, price_history: pd.DataFrame, index: str, dataset:str):
@@ -43,7 +43,7 @@ class FinanceEnvironment:
         # we backfill to avoid having a NaN in the first value
         # all padded timesteps will have 0
         price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
-        self.price_differences = torch.Tensor(price_differences)
+        self.price_differences = torch.from_numpy(price_differences.values).double()
 
     def start_episode(self):
         self.episode_losses = []
@@ -107,6 +107,10 @@ class FinanceEnvironment:
         return profit, reward
 
     def add_loss(self, loss):
+        if loss is None:
+            return
+
+        # TODO handle NUMDREG AD/ID loss tuple
         self.episode_losses.append(loss)
 
     def update_replay_memory(self):
@@ -117,8 +121,8 @@ class FinanceEnvironment:
             )
 
     def on_episode_end(self):
-        avg_loss = sum(self.episode_losses) / len(self.episode_losses)
-        avg_reward = sum(self.episode_rewards) / len(self.episode_rewards)
+        avg_loss = np.mean(self.episode_losses, axis=0)
+        avg_reward = np.mean(self.episode_rewards)
         return avg_loss, avg_reward, self.episode_profit
 
 

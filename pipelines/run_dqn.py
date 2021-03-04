@@ -14,7 +14,7 @@ from models.models import *
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 
 # Select an action given model and state
@@ -124,9 +124,12 @@ def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_bat
 
     # Compute the expected Q values...
     expected_q_batch = q_batch.clone().detach()
+    expected_q_batch = expected_q_batch.to(torch.float64)
     # Fill q values from q batch from index of the taken action to the updated q value using the reward and next max q value
     for i in range(expected_q_batch.shape[0]):
-        expected_q_batch[i, action_batch[i]] = reward_batch[i] + (config["GAMMA"] * next_max_q_batch[i])
+        # next_max_q_batch = next_max_q_batch.to(torch.double)
+        expected_q_batch[i, action_batch[i]] = reward_batch[i]
+        expected_q_batch[i, action_batch[i]] += (config["GAMMA"] * next_max_q_batch[i])
 
     # Loss is the difference between the q values from the policy net and expected q values from the target net
     loss = F.smooth_l1_loss(expected_q_batch, q_batch)
@@ -186,6 +189,9 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     losses = []
     rewards = []
     total_profits = []
+
+    model.policy_net = model.policy_net.double()
+    model.target_net = model.target_net.double()
 
     # initialize env
     env = make_env(index=index, symbol=symbol, dataset=dataset)
