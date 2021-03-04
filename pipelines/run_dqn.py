@@ -216,7 +216,6 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             # Get the sample at this time step
             (state, next_state, price, prev_price, init_price) = sample
 
-
             # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
 
@@ -224,10 +223,7 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             action_value = model.action_index_to_value(action_index=action_index)
 
             # Get reward given action_value and num
-            reward = compute_reward(num_t=num, action_value=action_value, price=price,
-                                    prev_price=prev_price, init_price=init_price)
-
-           
+            reward = compute_reward(num_t=num, action_value=action_value, price=price, prev_price=prev_price, init_price=init_price)
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)
@@ -280,7 +276,7 @@ def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["ST
         evaluation = valid
     
     # Look at each time step in the evaluation data
-    for sample in evaluation:
+    for t, sample in enumerate(evaluation):
         # Get sample at time step
         (state, next_state, price, prev_price, init_price) = sample
 

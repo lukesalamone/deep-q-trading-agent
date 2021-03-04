@@ -32,6 +32,7 @@ def run_evaluations(model:DQN, dataset:str, eval_set:str):
     plt.plot(list(range(len(running_profits))), running_profits, label="Model strategy")
     plt.plot(list(range(len(hold_running_profits))), hold_running_profits, label="Buy and hold")
     plt.legend()
+    plt.savefig("plots/evaluation.png")
     plt.title("Profits")
     plt.show()
     return
@@ -41,17 +42,18 @@ def run_training(model:DQN, dataset:str):
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
+    plt.savefig("plots/losses.png")
     plt.show()
 
     plt.plot(list(range(len(rewards))), rewards)
     plt.title("Rewards")
+    plt.savefig("plots/rewards.png")
     plt.show()
 
     plt.plot(list(range(len(profits))), profits)
     plt.title("Total Profits")
+    plt.savefig("plots/profits.png")
     plt.show()
-
-    return
 
 def run_experiment(**kwargs):
     model = DQN(method=experiment_args['method'])
@@ -60,18 +62,7 @@ def run_experiment(**kwargs):
         model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
 
     if kwargs['train_model'] and kwargs['dataset']:
-        model, losses, rewards, profits = train(model, dataset=kwargs['dataset'])
-        plt.plot(list(range(len(losses))), losses)
-        plt.title("Losses")
-        plt.show()
-
-        plt.plot(list(range(len(rewards))), rewards)
-        plt.title("Rewards")
-        plt.show()
-
-        plt.plot(list(range(len(profits))), profits)
-        plt.title("Total Profits")
-        plt.show()
+        run_training(model, kwargs['dataset'])
 
         if kwargs['save_model'] and kwargs['OUT_PATH']:
             save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
@@ -91,7 +82,7 @@ if __name__ == '__main__':
         'eval_set': 'test',
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_30.pt',
-        'save_model': True,
+        'save_model': False,
         'OUT_PATH': 'weights/numq_gspc_30.pt'
     }
 
