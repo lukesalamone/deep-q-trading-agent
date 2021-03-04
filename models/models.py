@@ -8,6 +8,8 @@ NUMQ = 0
 NUMDREG_AD = 1
 NUMDREG_ID = 2
 
+torch.set_default_dtype(torch.float64)
+
 class DQN():
     def __init__(self, method):
         self.BUY = 0
@@ -16,10 +18,10 @@ class DQN():
         
         # Set method
         self.method = method
-        
+
         self.policy_net = None
         self.target_net = None
-        
+
         # Set architecture
         if self.method == NUMQ:
             self.policy_net = NumQModel()
@@ -30,7 +32,7 @@ class DQN():
         elif self.method == NUMDREG_ID:
             self.policy_net = NumDRegModel(NUMDREG_ID)
             self.target_net = NumDRegModel(NUMDREG_ID)
-        
+
         # Make sure they start with the same weights
         self.transfer_weights()
 
@@ -47,6 +49,7 @@ class DQN():
         """
         return 1 - action_index
 
+
 class NumQModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -61,9 +64,10 @@ class NumQModel(nn.Module):
         x = self.fc3(x)
 
         q = self.fc_q(F.relu(x))
-        r = F.softmax(self.fc_q(F.sigmoid(x)))
+        r = F.softmax(self.fc_q(torch.sigmoid(x)))
 
         return q, r
+
 
 class NumDRegModel(nn.Module):
     def __init__(self, method):
@@ -99,28 +103,28 @@ class NumDRegModel(nn.Module):
 
         if self.step == 1:
             # Number branch based on q values
-            r = F.softmax(self.fc_q(F.sigmoid(x_act)))
+            r = F.softmax(self.fc_q(torch.sigmoid(x_act)))
         else:
             # Number branch
             x_num = F.relu(self.fc2_num(x))
-            x_num = F.sigmoid(self.fc3_num(x_num))
+            x_num = torch.sigmoid(self.fc3_num(x_num))
             # Output layer depends on method
             if self.method == NUMDREG_ID:
-                r = F.sigmoid(self.fc_r(x_num))
+                r = torch.sigmoid(self.fc_r(x_num))
             else:
                 r = F.softmax(self.fc_r(x_num))
 
         return q, r
-    
+
     def set_step(self, s):
         self.step = s
 
 
 class Net(nn.Module):
-    def __init__(self, size: int):
+    def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
-        self.out = nn.Linear(in_features=5, out_features=size, bias=True)
+        self.fc1 = nn.Linear(in_features=1, out_features=5, bias=True)
+        self.out = nn.Linear(in_features=5, out_features=1, bias=True)
 
     def forward(self, x: Tensor) -> Tensor:
         x = F.relu(self.fc1(x))

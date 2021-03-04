@@ -4,10 +4,13 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 import yaml
+import os
+import pandas as pd
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
 
 def _load_from_file(dataset:str) -> List[List[float]]:
     """
@@ -68,3 +71,14 @@ def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, fl
     """
     datasets = _load_from_file(dataset)
     return [_build_episode(ds) for ds in datasets]
+
+
+def load_prices(index: str, symbol: str):
+    path = config["STOCK_DATA_PATH"]
+    file = f"{index}/{symbol}.csv"
+    df = pd.read_csv(os.path.join(path, file))
+    # first, second columns to datetime, float64
+    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]])
+    df[df.columns[1]] = df[df.columns[1]].astype('float64')
+
+    return df
