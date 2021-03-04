@@ -79,11 +79,9 @@ def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, fl
 def load_prices(index: str, symbol: str):
     path = config["STOCK_DATA_PATH"]
     file = f"{index}/{symbol}.csv"
-    return pd.read_csv(os.path.join(path, file))
+    df = pd.read_csv(os.path.join(path, file))
+    # first, second columns to datetime, float64
+    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]])
+    df[df.columns[1]] = df[df.columns[1]].astype('float64')
 
-
-if __name__=="__main__":
-    i = 'gspc'
-    t = '^GSPC'
-    a = _read_csv(i, t)
-    print(a.head())
+    return df

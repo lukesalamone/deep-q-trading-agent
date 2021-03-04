@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch import Tensor
 import random
+import datetime
 import pandas as pd
 import yaml
 
@@ -16,7 +17,10 @@ with open("config.yml", "r") as ymlfile:
 class FinanceEnvironment:
     def __init__(self, price_history: pd.DataFrame, index: str, dataset:str):
 
-        self.start_date, self.end_date = config["INDEX_SPLITS"][index][dataset]
+        start_date, end_date = config["INDEX_SPLITS"][index][dataset]
+        self.start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        self.end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+
         self.lookback = config["LOOKBACK"]
 
         self.price_history = price_history
@@ -74,7 +78,7 @@ class FinanceEnvironment:
         # TODO: CHANGE DATES TO WORK WITH DATETIME
         #  Use >= in case dates are missing
         # TODO: THIS IS HOW WE CHECK WE ARE DONE
-        end = self.price_history[self.date_column].at[self.time_step] == self.end_date
+        end = self.price_history[self.date_column].at[self.time_step] >= self.end_date
 
         if end:
             self.next_state = torch.Tensor([])

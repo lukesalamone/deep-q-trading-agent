@@ -87,13 +87,13 @@ if __name__ == '__main__':
         'method': NUMQ,
         'index': 'gspc',
         'symbol': '^GSPC',
-        'train_model': True,
+        'train_model': False,
         'eval_model': True,
         'train_set': 'full_train',
         'eval_set': 'test',
-        'load_model': False,
-        'IN_PATH': 'weights/numq_gspc_30.pt',
-        'save_model': True,
+        'load_model': True,
+        'IN_PATH': 'weights/numq_gspc_10.pt',
+        'save_model': False,
         'OUT_PATH': 'weights/numq_gspc_10.pt'
     }
 
