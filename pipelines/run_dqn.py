@@ -37,7 +37,7 @@ class ReplayMemory(object):
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], only_use_strategy=False):
+def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATEGY"], use_strategy=False, only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -46,13 +46,18 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"], o
     q = q.squeeze()
     num = num.squeeze()
 
+    if t%500==0:
+        print("\tACT: ", q.detach().numpy())
+        print("\tNUM: ", num.detach().numpy())
+        print()
+
     # Check (q.shape num.shape should both be (3,) respectively) here
     assert q.shape == (3, )
     #assert num.shape == (3, )
 
     # Use predefined confidence if confidence is too low, indicating a confused market
     confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
-    if strategy and confidence < config["THRESHOLD"] or only_use_strategy:
+    if use_strategy and confidence < config["THRESHOLD"] or only_use_strategy:
         # TODO use defined strategy (hold for now)
         # actions = torch.where(confidences.lt(threshold), strategy, best_q)
         action_index = strategy
@@ -187,7 +192,7 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 
 
 # Train model on given training data
-def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bool=config["USE_VALID"], strategy:int=config["STRATEGY"]):
+def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bool=config["USE_VALID"]):
     print("Training model on {}...".format(dataset))
 
     optim_steps = 0
@@ -217,7 +222,7 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             (state, next_state, price, prev_price, init_price) = sample
 
             # Select action
-            action_index, num = select_action(model=model, state=state, strategy=strategy)
+            action_index, num = select_action(model=model, state=state, t=t)
 
             # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
             action_value = model.action_index_to_value(action_index=action_index)
@@ -238,12 +243,15 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             # Update profit
             e_profit += compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
 
-            # If loss was returned, append to losses and printloss every 100 steps
-            if loss and optim_steps % 2000 == 0:
+            # If loss was returned, append to losses
+            if loss and optim_steps % 200 == 0:
                 # Track rewards and losses
                 e_rewards.append(reward)
                 # TODO rework for numdreg
                 e_losses.append(loss[0])
+
+            # Print losses
+            if loss and optim_steps % 2000 == 0:
                 print("Episode: {}, Loss: {}".format(e+1, e_losses[-1]))
 
         # Update losses and rewards list with average of each over episode
@@ -281,7 +289,7 @@ def evaluate(model:DQN, dataset:str, evaluation_set:str, strategy:int=config["ST
         (state, next_state, price, prev_price, init_price) = sample
 
         # Select action
-        action_index, num = select_action(model=model, state=state, strategy=strategy, only_use_strategy=only_use_strategy)
+        action_index, num = select_action(model=model, state=state, t=t, strategy=strategy, only_use_strategy=only_use_strategy)
 
         # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
         action_value = model.action_index_to_value(action_index=action_index)
