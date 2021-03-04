@@ -76,9 +76,10 @@ def get_episode(dataset:str) -> List[List[Tuple[Tensor, Tensor, float, float, fl
     return [_build_episode(ds) for ds in datasets]
 
 
-def load_prices(index, symbol):
+def load_prices(index: str, symbol: str):
     path = config["STOCK_DATA_PATH"]
-    return pd.read_csv(os.path.join(path, index, symbol))
+    file = f"{index}/{symbol}.csv"
+    return pd.read_csv(os.path.join(path, file))
 
 
 if __name__=="__main__":

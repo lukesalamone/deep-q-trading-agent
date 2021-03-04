@@ -1,5 +1,6 @@
 from collections import deque
 from typing import Tuple
+import numpy as np
 import torch
 from torch import Tensor
 import random
@@ -16,8 +17,12 @@ class FinanceEnvironment:
     def __init__(self, price_history: pd.DataFrame, index: str, dataset:str):
 
         self.start_date, self.end_date = config["INDEX_SPLITS"][index][dataset]
-        self.price_history = price_history
         self.lookback = config["LOOKBACK"]
+
+        self.price_history = price_history
+        self.date_column, self.price_column = self.price_history.columns
+        # self.price_history[self.price_column] = self.price_history[self.price_column].astype(dtype=np.float32)
+        self.init_prices()
 
         # BUY, HOLD, SELL, = (1, 0, -1
         self.action_space = (1, 0, -1)
@@ -26,18 +31,19 @@ class FinanceEnvironment:
         self.profits = []
         self.replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
-        self.date_column, self.price_column = self.price_history.columns
-        self.init_prices()
-
     def init_prices(self):
         # we get the start index based on start_date.
-        self.start_index = self.price_history[self.date_column].get_loc[self.start_date]
+        self.start_index = self.price_history[self.price_history[self.date_column] == self.start_date].index.values[0]
 
         # if lookback > t we are in trouble,
-        # so we pad this dataframe with rows identical to the first row
-        padding = self.price_history.at[0] * self.lookback
-        self.price_history = pd.concat([padding, self.price_history], axis=1, ignore_index=True)
-        self.historical_price_differences = self.price_history[self.price_column].diff(1)
+        # so we pad this dataframe with rows identical to the first row and reset the index
+        pad = pd.concat([self.price_history.iloc[[0]]] * self.lookback)
+        self.price_history = pd.concat([pad, self.price_history], ignore_index=True)
+        # we create a pd.Series where at t, we have price - price_prev
+        # we backfill to avoid having a NaN in the first value
+        # all padded timesteps will have 0
+        price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
+        self.price_differences = torch.Tensor(price_differences)
 
     def start_episode(self):
         self.episode_losses = []
@@ -53,22 +59,22 @@ class FinanceEnvironment:
         self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
 
         # get the state as the day to day price differences from timestep-n to timestep
-        state = self.historical_price_differences.loc[self.time_step - self.lookback : self.time_step]
-        self.state = torch.Tensor(state)
-        assert self.state.size() == self.lookback
+        self.state = self.price_differences[self.time_step - self.lookback:self.time_step]
+        assert self.state.size() == torch.Size([self.lookback])
 
         # check the date at index step.
         # If it's the end date, we are at the end of the episode
         # end = self.price_history[self.date_column].at[self.time_step] == self.end_date
-        end = self.price_history[self.date_column].at[self.time_step] >= self.end_date
+        # TODO: CHANGE DATES TO WORK WITH DATETIME
+        #  Use >= in case dates are missing
+        end = self.price_history[self.date_column].at[self.time_step] == self.end_date
 
-        if not end:
-            # get the next state
-            next_state = self.historical_price_differences.loc[self.time_step - self.lookback + 1 : self.time_step + 1]
-            self.next_state = torch.Tensor(next_state)
-            assert self.next_state.size() == self.lookback
+        if end:
+            self.next_state = torch.Tensor([])
         else:
-            self.next_state = None
+            # get the next state
+            self.next_state = self.price_differences[self.time_step - self.lookback + 1:self.time_step + 1]
+            assert self.next_state.size() == torch.Size([self.lookback])
 
         # increment timestep
         self.time_step += 1
@@ -104,7 +110,8 @@ class FinanceEnvironment:
         self.episode_losses.append(loss)
 
     def update_replay_memory(self):
-        if self.next_state:
+        # checks if torch tensor is empty
+        if self.next_state.numel():
             self.replay_memory.update(
                 (self.state, self.action, self.reward, self.next_state)
             )
