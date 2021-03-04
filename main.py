@@ -19,12 +19,13 @@ def run_evaluations(model:DQN, dataset:str, eval_set:str):
     profits, running_profits, total_profits = evaluate(model,
                                                        dataset=dataset,
                                                        evaluation_set=eval_set,
-                                                       strategy=config["STRATEGY"],
                                                        only_use_strategy=False)
+                                                    
+    # Use strategy 0 - Buy
     hold_profits, hold_running_profits, hold_total_profits = evaluate(model,
                                                                       dataset=dataset,
                                                                       evaluation_set=eval_set,
-                                                                      strategy=config["STRATEGY"],
+                                                                      strategy=0,
                                                                       only_use_strategy=True)
 
     print(f"TOTAL MKT PROFITS : {hold_total_profits}")
@@ -81,9 +82,9 @@ if __name__ == '__main__':
         'eval_model': True,
         'eval_set': 'test',
         'load_model': False,
-        'IN_PATH': 'weights/numq_gspc_30.pt',
+        'IN_PATH': 'weights/numq_test.pt',
         'save_model': False,
-        'OUT_PATH': 'weights/numq_gspc_30.pt'
+        'OUT_PATH': 'weights/numq_test.pt'
     }
 
     run_experiment(**experiment_args)
