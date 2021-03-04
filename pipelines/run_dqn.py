@@ -190,8 +190,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     rewards = []
     total_profits = []
 
-    model.policy_net = model.policy_net.double()
-    model.target_net = model.target_net.double()
+    # model.policy_net = model.policy_net.double()
+    # model.target_net = model.target_net.double()
 
     # initialize env
     env = make_env(index=index, symbol=symbol, dataset=dataset)

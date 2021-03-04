@@ -93,7 +93,7 @@ if __name__ == '__main__':
         'eval_set': 'test',
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_30.pt',
-        'save_model': True,
+        'save_model': False,
         'OUT_PATH': 'weights/numq_gspc_30.pt'
     }
 

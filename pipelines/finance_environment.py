@@ -34,16 +34,19 @@ class FinanceEnvironment:
     def init_prices(self):
         # we get the start index based on start_date.
         self.start_index = self.price_history[self.price_history[self.date_column] == self.start_date].index.values[0]
-
+        print(f"start_date : {self.start_date}")
+        print(f"start_index : {self.start_index}")
         # if lookback > t we are in trouble,
         # so we pad this dataframe with rows identical to the first row and reset the index
         pad = pd.concat([self.price_history.iloc[[0]]] * self.lookback)
         self.price_history = pd.concat([pad, self.price_history], ignore_index=True)
+        print(f"price_history shape : {self.price_history.shape}")
         # we create a pd.Series where at t, we have price - price_prev
         # we backfill to avoid having a NaN in the first value
         # all padded timesteps will have 0
         price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
-        self.price_differences = torch.from_numpy(price_differences.values).double()
+        self.price_differences = torch.from_numpy(price_differences.values)
+        # self.price_differences = torch.from_numpy(price_differences.values).double()
 
     def start_episode(self):
         self.episode_losses = []
@@ -51,9 +54,11 @@ class FinanceEnvironment:
         self.episode_profit = 0
         # update step value because of padding and start index
         self.time_step = self.lookback + self.start_index
+        print(f"time step start : {self.time_step}")
 
     def step(self):
         # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-lookback
+        # TODO: EVAL BREAKS HERE
         self.price = self.price_history[self.price_column].at[self.time_step]
         self.prev_price = self.price_history[self.price_column].at[self.time_step - 1]
         self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
