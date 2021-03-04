@@ -9,7 +9,7 @@ INDEX_SPLITS: {
     "train": ["1987-01-02", "2002-11-04"],
     "valid": ["2002-11-05", "2006-08-10"],
     "full_train": ["1987-01-02", "2006-08-10"],
-    "test": ["2006-08-11", "2017-12-31"]
+    "test": ["2006-08-11", "2017-12-29"]
   }
 }
 LOOKBACK: 200
@@ -20,8 +20,8 @@ STRATEGY: 0
 THRESHOLD: 0.2
 
 # Training
-USE_VALID: True
-EPISODES: 5
+# USE_VALID: True
+EPISODES: 10
 LR: 0.0001
 LR_NUMDREGAD: 0.0000001
 LR_NUMDREGID: 0.00001

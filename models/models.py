@@ -8,6 +8,7 @@ NUMQ = 0
 NUMDREG_AD = 1
 NUMDREG_ID = 2
 
+torch.set_default_dtype(torch.float64)
 
 class DQN():
     def __init__(self, method):

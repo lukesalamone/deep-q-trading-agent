@@ -32,7 +32,7 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     plt.plot(list(range(len(running_profits))), running_profits, label="Model strategy")
     plt.plot(list(range(len(hold_running_profits))), hold_running_profits, label="Buy and hold")
     plt.legend()
-    plt.title("Profits")
+    plt.title("Eval Profits")
     plt.show()
     return
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_30.pt',
         'save_model': True,
-        'OUT_PATH': 'weights/numq_gspc_30.pt'
+        'OUT_PATH': 'weights/numq_gspc_10.pt'
     }
 
     run_experiment(**experiment_args)
