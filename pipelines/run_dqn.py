@@ -209,7 +209,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         for i in count():
             state, done = env.step()
 
-            action_index, num = select_action(model=model, state=state, strategy=strategy)
+            action_index, num = select_action(model=model, state=state, strategy=strategy, t=i)
 
             # Compute profit, reward given action_index and num
             env.compute_profit_and_reward(action_index=action_index, num=num)
@@ -274,7 +274,7 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
 
         # Select action
         action_index, num = select_action(model=model, state=state, strategy=strategy,
-                                          only_use_strategy=only_use_strategy)
+                                          only_use_strategy=only_use_strategy, t=i)
 
         # Compute profit, reward given action_index and num
         profit, _ = env.compute_profit_and_reward(action_index=action_index, num=num)

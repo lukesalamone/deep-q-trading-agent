@@ -88,11 +88,11 @@ if __name__ == '__main__':
         'method': NUMQ,
         'index': 'gspc',
         'symbol': '^GSPC',
-        'train_model': False,
+        'train_model': True,
         'eval_model': True,
         'train_set': 'full_train',
         'eval_set': 'test',
-        'load_model': True,
+        'load_model': False,
         'IN_PATH': 'weights/numq_gspc_10.pt',
         'save_model': False,
         'OUT_PATH': 'weights/numq_gspc_10.pt'
