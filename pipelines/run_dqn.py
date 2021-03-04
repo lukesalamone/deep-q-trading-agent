@@ -9,8 +9,7 @@ import yaml
 from itertools import count
 
 from .build_batches import get_episode
-from utils.rewards import compute_reward, compute_profit
-from .finance_environment import make_env, ReplayMemory
+from .finance_environment import make_env, ReplayMemory, _reward, _profit
 from models.models import *
 
 # Get all config values and hyperparameters
@@ -176,38 +175,32 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 
 
 # Train model on given training data
-def train(model: DQN, index: str, dataset: str, episodes: int = config["EPISODES"], use_valid: bool = config["USE_VALID"],
-          strategy: int = config["STRATEGY"]):
-    print(f"Training model on {dataset} from {index}...")
+def train(model: DQN, index: str, symbol: str, dataset: str,
+          episodes: int=config["EPISODES"], strategy: int=config["STRATEGY"]):
+
+    print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
     optim_steps = 0
     losses = []
     rewards = []
     total_profits = []
-    env = make_env(index, dataset, config['MEMORY_CAPACITY'], config['LOOKBACK'])
 
-    # TODO need to figure out what episode should be
-    # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
-    # train, valid, test = get_episode(dataset=dataset)
-
-    # if use_valid:
-    #     train = train + valid
+    # initialize env
+    env = make_env(index=index, symbol=symbol, dataset=dataset)
 
     # Run for the defined number of episodes
     for e in range(episodes):
-
+        # start episode or reset what needs to be reset in the env
         env.start_episode()
 
+        # iterate until done
         for i in count():
             state, done = env.step()
 
             action_index, num = select_action(model=model, state=state, strategy=strategy)
 
-            # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
-            action_value = model.action_index_to_value(action_index=action_index)
-
-            # Get reward given action_value and num
-            profit, reward = env.profit_and_reward(action=action_value, num_t=num)
+            # Compute profit, reward given action_index and num
+            env.compute_profit_and_reward(action_index=action_index, num=num)
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)
@@ -239,13 +232,13 @@ def train(model: DQN, index: str, dataset: str, episodes: int = config["EPISODES
         total_profits.append(e_profit)
 
         # Update policy net with target net
+        # TODO: DO WE WANT TO TRANSFER WEIGHTS EVERY EPISODE?
         if e % 1 == 0:
             # TODO NEED A TAU
             model.transfer_weights()
 
     print("Training complete")
 
-    # Return loss values during training
     return model, losses, rewards, total_profits
 
 
@@ -281,7 +274,7 @@ def evaluate(model: DQN, index:str, dataset: str, evaluation_set: str, strategy:
 
         # Get reward given action_value and num
         # TODO need to make sure our profit function works
-        profit, reward = env.profit_and_reward(action=action_value, num_t=num)
+        profit, reward = env.compute_profit_and_reward(action=action_value, num_t=num)
 
         # Add profits to list
         profits.append(profit)
