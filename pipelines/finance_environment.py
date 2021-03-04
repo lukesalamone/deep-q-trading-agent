@@ -31,8 +31,7 @@ class FinanceEnvironment:
 
     def init_prices(self):
         # we get the start index based on start_date.
-        # this is useful if you are testing, then set start date to that date.
-        self.start_index = self.price_history['Date'].get_loc[self.start_date]
+        self.start_index = self.price_history[self.date_column].get_loc[self.start_date]
 
         # if lookback > t we are in trouble,
         # so we pad this dataframe with rows identical to the first row
@@ -98,6 +97,8 @@ class FinanceEnvironment:
 
         self.episode_rewards.append(reward)
         self.episode_profit += profit
+
+        return profit, reward
 
     def add_loss(self, loss):
         self.episode_losses.append(loss)

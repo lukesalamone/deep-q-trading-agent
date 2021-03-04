@@ -20,6 +20,7 @@ with open("config.yml", "r") as ymlfile:
 # Select an action given model and state
 # Returns action index
 def select_action(model: DQN, state: Tensor, strategy: int = config["STRATEGY"], only_use_strategy=False):
+    # TODO: Should strategy be None for training?
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -177,6 +178,7 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 # Train model on given training data
 def train(model: DQN, index: str, symbol: str, dataset: str,
           episodes: int=config["EPISODES"], strategy: int=config["STRATEGY"]):
+    # TODO: Should strategy be None for training?
 
     print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
@@ -245,20 +247,16 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
-def evaluate(model: DQN, index:str, dataset: str, evaluation_set: str, strategy: int = config["STRATEGY"],
+def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = config["STRATEGY"],
              only_use_strategy: bool = False):
+    # TODO: Should strategy be None for training?
+
+    print(f"Evaluating model on {symbol} from {index} with the {dataset} set...")
+
+    # initialize env
     profits = []
     running_profits = [0]
-
-    # Load data and use defined set to evaluation set
-    train, valid, test = get_episode(dataset=dataset)
-    if evaluation_set == 'test':
-        evaluation = test
-    else:
-        evaluation = valid
-
-
-    env = make_env(index, dataset, config['MEMORY_CAPACITY'], config['LOOKBACK'])
+    env = make_env(index=index, symbol=symbol, dataset=dataset)
     env.start_episode()
 
     # Look at each time step in the evaluation data
@@ -269,16 +267,13 @@ def evaluate(model: DQN, index:str, dataset: str, evaluation_set: str, strategy:
         action_index, num = select_action(model=model, state=state, strategy=strategy,
                                           only_use_strategy=only_use_strategy)
 
-        # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
-        action_value = model.action_index_to_value(action_index=action_index)
-
-        # Get reward given action_value and num
-        # TODO need to make sure our profit function works
-        profit, reward = env.compute_profit_and_reward(action=action_value, num_t=num)
+        # Compute profit, reward given action_index and num
+        profit, _ = env.compute_profit_and_reward(action_index=action_index, num=num)
 
         # Add profits to list
         profits.append(profit)
-        running_profits.append(running_profits[-1] + profit)
+        running_profits.append(env.episode_profit)
 
-    # Return list of profits and total profit
-    return profits, running_profits, sum(profits)
+    total_profit = env.episode_profit
+    # Return list of profits, running total profits, and total profit
+    return profits, running_profits, total_profit
