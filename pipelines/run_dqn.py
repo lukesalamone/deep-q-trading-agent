@@ -1,45 +1,26 @@
 import numpy as np
 import torch
 import random
-from typing import Tuple
-from collections import deque
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch import optim, Tensor
 import yaml
+from itertools import count
 
 from .build_batches import get_episode
-from utils.rewards import compute_reward, compute_profit
+from .finance_environment import make_env, ReplayMemory, _reward, _profit
 from models.models import *
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
-
-
-class ReplayMemory(object):
-    def __init__(self, capacity):
-        self.memory = deque(maxlen=capacity)
-
-    def update(self, transition: Tuple[Tensor, int, Tensor, float]):
-        """
-        Saves a transition
-        :param transition: (state, action_index, next_state, reward)
-        :return:
-        """
-        self.memory.append(transition)
-
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 
 # Select an action given model and state
 # Returns action index
 def select_action(model: DQN, state: Tensor, strategy: int = config["STRATEGY"], only_use_strategy=False):
+    # TODO: Should strategy be None for training?
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -143,9 +124,12 @@ def optimize_numq(model, state_batch, action_batch, reward_batch, next_state_bat
 
     # Compute the expected Q values...
     expected_q_batch = q_batch.clone().detach()
+    expected_q_batch = expected_q_batch.to(torch.float64)
     # Fill q values from q batch from index of the taken action to the updated q value using the reward and next max q value
     for i in range(expected_q_batch.shape[0]):
-        expected_q_batch[i, action_batch[i]] = reward_batch[i] + (config["GAMMA"] * next_max_q_batch[i])
+        # next_max_q_batch = next_max_q_batch.to(torch.double)
+        expected_q_batch[i, action_batch[i]] = reward_batch[i]
+        expected_q_batch[i, action_batch[i]] += (config["GAMMA"] * next_max_q_batch[i])
 
     # Loss is the difference between the q values from the policy net and expected q values from the target net
     loss = F.smooth_l1_loss(expected_q_batch, q_batch)
@@ -195,117 +179,110 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 
 
 # Train model on given training data
-def train(model: DQN, dataset: str, episodes: int = config["EPISODES"], use_valid: bool = config["USE_VALID"],
-          strategy: int = config["STRATEGY"]):
-    print("Training model on {}...".format(dataset))
+def train(model: DQN, index: str, symbol: str, dataset: str,
+          episodes: int=config["EPISODES"], strategy: int=config["STRATEGY"]):
+    # TODO: Should strategy be None for training?
+
+    print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
     optim_steps = 0
     losses = []
     rewards = []
     total_profits = []
-    replay_memory = ReplayMemory(capacity=config["MEMORY_CAPACITY"])
 
-    # TODO need to figure out what episode should be
-    # episode:= list of (state, next_state, price, prev_price, init_price) in the training set
-    train, valid, test = get_episode(dataset=dataset)
+    # model.policy_net = model.policy_net.double()
+    # model.target_net = model.target_net.double()
 
-    if use_valid:
-        train = train + valid
+    # initialize env
+    env = make_env(index=index, symbol=symbol, dataset=dataset)
 
     # Run for the defined number of episodes
     for e in range(episodes):
-        # print("EPISODE ", 1)
-        # print("===========")
+        # start episode or reset what needs to be reset in the env
+        env.start_episode()
 
-        e_losses = []
-        e_rewards = []
-        e_profit = 0
-        # Look at each time step in the train data
-        for t, sample in enumerate(train):
-            # Get the sample at this time step
-            (state, next_state, price, prev_price, init_price) = sample
+        # iterate until done
+        for i in count():
+            state, done = env.step()
 
-            # Select action
             action_index, num = select_action(model=model, state=state, strategy=strategy)
 
-            # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
-            action_value = model.action_index_to_value(action_index=action_index)
-
-            # Get reward given action_value and num
-            reward = compute_reward(num_t=num, action_value=action_value, price=price,
-                                    prev_price=prev_price, init_price=init_price)
+            # Compute profit, reward given action_index and num
+            env.compute_profit_and_reward(action_index=action_index, num=num)
 
             # Push transition into memory buffer
             # NOTE (using action index not action value)
-            replay_memory.update((state, action_index, reward, next_state))
+            env.update_replay_memory()
 
             # Update model and increment optimization steps
-            loss = optimize_model(model=model, memory=replay_memory)
+            loss = optimize_model(model=model, memory=env.replay_memory)
+            env.add_loss(loss)
 
             # Update step
             optim_steps += 1
 
-            # Update profit
-            e_profit += compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
-
             # If loss was returned, append to losses and printloss every 100 steps
             if loss and optim_steps % 200 == 0:
                 # Track rewards and losses
-                e_rewards.append(reward)
+                # e_rewards.append(reward)
                 # TODO rework for numdreg
-                e_losses.append(loss[0])
-                print("Episode: {}, Loss: {}".format(e + 1, e_losses[-1]))
+                # e_losses.append(loss[0])
+                print("Episode: {}, Loss: {}".format(e + 1, loss))
+
+            if done:
+                break
+
+        avg_loss, avg_reward, e_profit = env.on_episode_end()
 
         # Update losses and rewards list with average of each over episode
-        losses.append(sum(e_losses) / len(e_losses))
-        rewards.append(sum(e_rewards) / len(e_rewards))
+        losses.append(avg_loss)
+        rewards.append(avg_reward)
         total_profits.append(e_profit)
 
         # Update policy net with target net
+        # TODO: DO WE WANT TO TRANSFER WEIGHTS EVERY EPISODE?
         if e % 1 == 0:
             # TODO NEED A TAU
             model.transfer_weights()
 
     print("Training complete")
 
-    # Return loss values during training
     return model, losses, rewards, total_profits
 
 
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
-def evaluate(model: DQN, dataset: str, evaluation_set: str, strategy: int = config["STRATEGY"],
+def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = config["STRATEGY"],
              only_use_strategy: bool = False):
+    # TODO: Should strategy be None for training?
+
+    print(f"Evaluating model on {symbol} from {index} with the {dataset} set...")
+
+    # initialize env
     profits = []
     running_profits = [0]
-
-    # Load data and use defined set to evaluation set
-    train, valid, test = get_episode(dataset=dataset)
-    if evaluation_set == 'test':
-        evaluation = test
-    else:
-        evaluation = valid
+    env = make_env(index=index, symbol=symbol, dataset=dataset)
+    env.start_episode()
 
     # Look at each time step in the evaluation data
-    for sample in evaluation:
-        # Get sample at time step
-        (state, next_state, price, prev_price, init_price) = sample
+    for i in count():
+        state, done = env.step()
 
         # Select action
         action_index, num = select_action(model=model, state=state, strategy=strategy,
                                           only_use_strategy=only_use_strategy)
 
-        # Get action values from action indices (BUY=1, HOLD=0, SELL=-1)
-        action_value = model.action_index_to_value(action_index=action_index)
-
-        # Get reward given action_value and num
-        # TODO need to make sure our profit function works
-        profit = compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
+        # Compute profit, reward given action_index and num
+        profit, _ = env.compute_profit_and_reward(action_index=action_index, num=num)
 
         # Add profits to list
         profits.append(profit)
-        running_profits.append(running_profits[-1] + profit)
+        running_profits.append(env.episode_profit)
 
-    # Return list of profits and total profit
-    return profits, running_profits, sum(profits)
+        if done:
+            break
+
+    total_profit = env.episode_profit
+    # Return list of profits, running total profits, and total profit
+    return profits, running_profits, total_profit
