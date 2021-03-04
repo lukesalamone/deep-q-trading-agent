@@ -239,7 +239,7 @@ def train(model: DQN, dataset:str, episodes:int=config["EPISODES"], use_valid:bo
             e_profit += compute_profit(num_t=num, action_value=action_value, price=price, prev_price=prev_price)
 
             # If loss was returned, append to losses and printloss every 100 steps
-            if loss and optim_steps % 200 == 0:
+            if loss and optim_steps % 2000 == 0:
                 # Track rewards and losses
                 e_rewards.append(reward)
                 # TODO rework for numdreg
