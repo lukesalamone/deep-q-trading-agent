@@ -25,7 +25,6 @@ class FinanceEnvironment:
 
         self.price_history = price_history
         self.date_column, self.price_column = self.price_history.columns
-        # self.price_history[self.price_column] = self.price_history[self.price_column].astype(dtype=np.float32)
         self.init_prices()
 
         # BUY, HOLD, SELL, = (1, 0, -1
@@ -49,11 +48,6 @@ class FinanceEnvironment:
         price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
         self.price_differences = torch.from_numpy(price_differences.values)
 
-        # print(f"last row? {self.price_history.iloc[[8013]]}")
-        # print(f"last row {self.price_history.iloc[[-1]]}")
-        # print(ass)
-        # print(ass)
-
     def start_episode(self):
         self.episode_losses = []
         self.episode_rewards = []
@@ -63,7 +57,6 @@ class FinanceEnvironment:
 
     def step(self):
         # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-lookback
-        # TODO: EVAL BREAKS HERE BECAUSE WE LOOK FOR TIME_STEP > Max Index
         self.price = self.price_history[self.price_column].at[self.time_step]
         self.prev_price = self.price_history[self.price_column].at[self.time_step - 1]
         self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
@@ -73,11 +66,7 @@ class FinanceEnvironment:
         assert self.state.size() == torch.Size([self.lookback])
 
         # check the date at index step.
-        # If it's the end date, we are at the end of the episode
-        # end = self.price_history[self.date_column].at[self.time_step] == self.end_date
-        # TODO: CHANGE DATES TO WORK WITH DATETIME
-        #  Use >= in case dates are missing
-        # TODO: THIS IS HOW WE CHECK WE ARE DONE
+        # If it's past the end date, we are at the end of the episode
         end = self.price_history[self.date_column].at[self.time_step] >= self.end_date
 
         if end:
@@ -88,7 +77,6 @@ class FinanceEnvironment:
             assert self.next_state.size() == torch.Size([self.lookback])
 
         # increment timestep
-        # print(f"time_step {self.time_step}")
         self.time_step += 1
 
         return self.state, end
