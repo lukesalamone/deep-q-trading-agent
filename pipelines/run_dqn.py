@@ -280,6 +280,9 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         profits.append(profit)
         running_profits.append(env.episode_profit)
 
+        if done:
+            break
+
     total_profit = env.episode_profit
     # Return list of profits, running total profits, and total profit
     return profits, running_profits, total_profit
