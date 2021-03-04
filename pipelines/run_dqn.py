@@ -37,7 +37,7 @@ class ReplayMemory(object):
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATEGY"], use_strategy=False, only_use_strategy=False):
+def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATEGY"], use_exploration=False, use_strategy=False, only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -69,6 +69,13 @@ def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATE
         num = config["SHARE_TRADE_LIMIT"] * num.item()
     else:
         num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
+    
+    # Generate random action and num using epsilon exploration
+    if random.random() < config["EPSILON"]:
+        action_index = random.randint(0,  2)
+
+    if random.random() < config["EPSILON"]:
+        num = random.uniform(0, 1)
     
     # If confidence is high enough, return the action of the highest q value
     return action_index, num
