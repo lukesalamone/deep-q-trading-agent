@@ -21,7 +21,6 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     rewards, profits, running_profits, total_profits = evaluate(model,
                                                        index=index,
                                                        symbol=symbol,
-                                                       strategy=1,
                                                        dataset=dataset)
     # MKT trading 10 share
     mkt10_rewards, mkt10_profits, mkt10_running_profits, mkt10_total_profits = evaluate(model,
@@ -29,7 +28,7 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                                       symbol=symbol,
                                                                       dataset=dataset,
                                                                       strategy=0,
-                                                                      strategy_num=1.0,
+                                                                      strategy_num=10.0,
                                                                       only_use_strategy=True)
     
     # MKT trading 1 share
@@ -38,7 +37,7 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                                       symbol=symbol,
                                                                       dataset=dataset,
                                                                       strategy=0,
-                                                                      strategy_num=0.1,
+                                                                      strategy_num=1.0,
                                                                       only_use_strategy=True)
 
     print(f"TOTAL MKT-10 PROFITS : {mkt10_total_profits}")
@@ -100,9 +99,9 @@ if __name__ == '__main__':
         'train_set': 'train',
         'eval_set': 'valid',
         'load_model': False,
-        'IN_PATH': 'weights/numq_gspc_10.pt',
-        'save_model': False,
-        'OUT_PATH': 'weights/numq_gspc_10.pt'
+        'IN_PATH': 'weights/numq_test.pt',
+        'save_model': True,
+        'OUT_PATH': 'weights/numq_test.pt'
     }
 
     run_experiment(**experiment_args)
