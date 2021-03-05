@@ -23,18 +23,30 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                        symbol=symbol,
                                                        strategy=1,
                                                        dataset=dataset)
-    hold_rewards, hold_profits, hold_running_profits, hold_total_profits = evaluate(model,
+    # MKT trading 10 share
+    mkt10_rewards, mkt10_profits, mkt10_running_profits, mkt10_total_profits = evaluate(model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=dataset,
                                                                       strategy=0,
                                                                       strategy_num=1.0,
                                                                       only_use_strategy=True)
+    
+    # MKT trading 1 share
+    mkt1_rewards, mkt1_profits, mkt1_running_profits, mkt1_total_profits = evaluate(model,
+                                                                      index=index,
+                                                                      symbol=symbol,
+                                                                      dataset=dataset,
+                                                                      strategy=0,
+                                                                      strategy_num=0.1,
+                                                                      only_use_strategy=True)
 
-    print(f"TOTAL MKT PROFITS : {hold_total_profits}")
-    print(f"TOTAL MODEL PROFITS : {total_profits}")
-    plt.plot(list(range(len(running_profits))), running_profits, label="Model strategy")
-    plt.plot(list(range(len(hold_running_profits))), hold_running_profits, label="Buy and hold")
+    print(f"TOTAL MKT-10 PROFITS : {mkt10_total_profits}")
+    print(f"TOTAL MKT-1 PROFITS : {mkt1_total_profits}")
+    print(f"TOTAL AGENT PROFITS : {total_profits}")
+    plt.plot(list(range(len(running_profits))), running_profits, label="Trading Agent")
+    plt.plot(list(range(len(mkt10_running_profits))), mkt10_running_profits, label="MKT-10")
+    plt.plot(list(range(len(mkt1_running_profits))), mkt1_running_profits, label="MKT-1")
     plt.legend()
     plt.savefig("plots/evaluation.png")
     plt.title("Eval Profits")
