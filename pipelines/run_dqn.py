@@ -204,7 +204,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     # Run for the defined number of episodes
     for e in range(episodes):
         # start episode or reset what needs to be reset in the env
-        env.start_episode()
+        env.start_episode(start_with_padding=False)
 
         # iterate until done
         for i in count():
@@ -216,9 +216,18 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             # Compute profit, reward given action_index and num
             env.compute_profit_and_reward(action_index=action_index, num=num)
 
-            # Push transition into memory buffer
-            # NOTE (using action index not action value)
+            # DEBUG
+            #if i > -1:
+            #    env.print_values()
+
+            # Update memory buffer to include observed transition
             env.update_replay_memory()
+
+            # DEBUG
+            #print(env.replay_memory[-1])
+
+            #if i > 2:
+            #    assert False
 
             # Update model and increment optimization steps
             loss = optimize_model(model=model, memory=env.replay_memory)
@@ -246,8 +255,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         total_profits.append(e_profit)
 
         # Update policy net with target net
-        # TODO: DO WE WANT TO TRANSFER WEIGHTS EVERY EPISODE?
-        if e % 1 == 0:
+        if e % config["EPISODES_PER_TARGET_UPDATE"] == 0:
             # TODO NEED A TAU
             model.transfer_weights()
 
@@ -276,13 +284,14 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
 
         # Select action
         action_index, num = select_action(model=model, state=state, strategy=strategy, use_exploration=False,
-                                          only_use_strategy=only_use_strategy, t=i)
+                                            use_strategy=True, only_use_strategy=only_use_strategy, t=i)
 
         # Compute profit, reward given action_index and num
-        profit, _ = env.compute_profit_and_reward(action_index=action_index, num=num)
+        profit, reward = env.compute_profit_and_reward(action_index=action_index, num=num)
 
         # Add profits to list
         profits.append(profit)
+        #profits.append(reward)
         running_profits.append(env.episode_profit)
 
         if done:

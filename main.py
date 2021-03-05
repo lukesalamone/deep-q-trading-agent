@@ -36,7 +36,6 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     plt.savefig("plots/evaluation.png")
     plt.title("Eval Profits")
     plt.show()
-    return
 
 def run_training(model:DQN, index: str, symbol:str, dataset:str):
     model, losses, rewards, profits = train(model=model, index=index, symbol=symbol, dataset=dataset)
@@ -79,8 +78,8 @@ if __name__ == '__main__':
         'symbol': '^GSPC',
         'train_model': True,
         'eval_model': True,
-        'train_set': 'full_train',
-        'eval_set': 'test',
+        'train_set': 'train',
+        'eval_set': ['train', 'valid'],
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_10.pt',
         'save_model': True,
