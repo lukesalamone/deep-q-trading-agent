@@ -38,8 +38,8 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     plt.show()
     return
 
-def run_training(model:DQN, dataset:str):
-    model, losses, rewards, profits = train(model, dataset=dataset)
+def run_training(model:DQN, index: str, symbol:str, dataset:str):
+    model, losses, rewards, profits = train(model=model, index=index, symbol=symbol, dataset=dataset)
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
@@ -63,18 +63,7 @@ def run_experiment(**kwargs):
         model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
 
     if kwargs['train_model'] and kwargs['train_set']:
-        model, losses, rewards, profits = train(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['train_set'])
-        plt.plot(list(range(len(losses))), losses)
-        plt.title("Losses")
-        plt.show()
-
-        plt.plot(list(range(len(rewards))), rewards)
-        plt.title("Rewards")
-        plt.show()
-
-        plt.plot(list(range(len(profits))), profits)
-        plt.title("Total Profits")
-        plt.show()
+        run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['train_set'])
 
         if kwargs['save_model'] and kwargs['OUT_PATH']:
             save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
@@ -94,7 +83,7 @@ if __name__ == '__main__':
         'eval_set': 'test',
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_10.pt',
-        'save_model': False,
+        'save_model': True,
         'OUT_PATH': 'weights/numq_gspc_10.pt'
     }
 

@@ -53,11 +53,12 @@ def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATE
         num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
 
     # Generate random action and num using epsilon exploration
-    if random.random() < config["EPSILON"]:
-        action_index = random.randint(0,  2)
+    if use_exploration:
+        if random.random() < config["EPSILON"]:
+            action_index = random.randint(0,  2)
 
-    if random.random() < config["EPSILON"]:
-        num = random.uniform(0, 1)
+        if random.random() < config["EPSILON"]:
+            num = random.uniform(0, 1)
 
     # If confidence is high enough, return the action of the highest q value
     return action_index, num
@@ -209,7 +210,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         for i in count():
             state, done = env.step()
 
-            action_index, num = select_action(model=model, state=state, strategy=strategy, t=i)
+            action_index, num = select_action(model=model, state=state, t=i, use_exploration=True, use_strategy=False)
+            # action_index, num = select_action(model=model, state=state, strategy=strategy, t=i)
 
             # Compute profit, reward given action_index and num
             env.compute_profit_and_reward(action_index=action_index, num=num)
@@ -273,7 +275,7 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         state, done = env.step()
 
         # Select action
-        action_index, num = select_action(model=model, state=state, strategy=strategy,
+        action_index, num = select_action(model=model, state=state, strategy=strategy, use_exploration=False,
                                           only_use_strategy=only_use_strategy, t=i)
 
         # Compute profit, reward given action_index and num
