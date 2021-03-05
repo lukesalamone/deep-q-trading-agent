@@ -18,14 +18,17 @@ def save_weights(model:DQN, OUT_PATH):
 
 def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     # def run_evaluations(model:DQN, dataset:str, eval_set:str):
-    profits, running_profits, total_profits = evaluate(model,
+    rewards, profits, running_profits, total_profits = evaluate(model,
                                                        index=index,
                                                        symbol=symbol,
+                                                       strategy=1,
                                                        dataset=dataset)
-    hold_profits, hold_running_profits, hold_total_profits = evaluate(model,
+    hold_rewards, hold_profits, hold_running_profits, hold_total_profits = evaluate(model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=dataset,
+                                                                      strategy=0,
+                                                                      strategy_num=1.0,
                                                                       only_use_strategy=True)
 
     print(f"TOTAL MKT PROFITS : {hold_total_profits}")
@@ -38,21 +41,25 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
     plt.show()
 
 def run_training(model:DQN, index: str, symbol:str, dataset:str):
-    model, losses, rewards, profits = train(model=model, index=index, symbol=symbol, dataset=dataset)
+    model, losses, rewards, val_rewards, profits, val_profits = train(model=model, index=index, symbol=symbol, dataset=dataset)
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
     plt.savefig("plots/losses.png")
     plt.show()
 
-    plt.plot(list(range(len(rewards))), rewards)
+    plt.plot(list(range(len(rewards))), rewards, label="Training")
+    plt.plot(list(range(len(val_rewards))), val_rewards, label="Validation")
     plt.title("Rewards")
     plt.savefig("plots/rewards.png")
+    plt.legend()
     plt.show()
 
-    plt.plot(list(range(len(profits))), profits)
+    plt.plot(list(range(len(profits))), profits, label="Training")
+    plt.plot(list(range(len(val_profits))), val_profits, label="Validation")
     plt.title("Total Profits")
     plt.savefig("plots/profits.png")
+    plt.legend()
     plt.show()
 
 def run_experiment(**kwargs):
@@ -79,10 +86,10 @@ if __name__ == '__main__':
         'train_model': True,
         'eval_model': True,
         'train_set': 'train',
-        'eval_set': ['train', 'valid'],
+        'eval_set': 'valid',
         'load_model': False,
         'IN_PATH': 'weights/numq_gspc_10.pt',
-        'save_model': True,
+        'save_model': False,
         'OUT_PATH': 'weights/numq_gspc_10.pt'
     }
 

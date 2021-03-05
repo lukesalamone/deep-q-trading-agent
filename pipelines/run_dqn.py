@@ -19,7 +19,7 @@ with open("config.yml", "r") as ymlfile:
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATEGY"], use_exploration=False, use_strategy=False, only_use_strategy=False):
+def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATEGY"], strategy_num: float=config["STRATEGY_NUM"], use_exploration=False, use_strategy=False, only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -40,17 +40,16 @@ def select_action(model: DQN, state: Tensor, t:int, strategy: int=config["STRATE
     # Use predefined confidence if confidence is too low, indicating a confused market
     confidence = (torch.abs(q[model.BUY] - q[model.SELL]) / torch.sum(q)).item()
     if use_strategy and confidence < config["THRESHOLD"] or only_use_strategy:
-        # TODO use defined strategy (hold for now)
-        # actions = torch.where(confidences.lt(threshold), strategy, best_q)
         action_index = strategy
+        num = strategy_num
     else:
         action_index = torch.argmax(q).item()
 
-    # Multiply num by trading limit to get actual share trade volume given model method
-    if model.method == NUMDREG_ID:
-        num = config["SHARE_TRADE_LIMIT"] * num.item()
-    else:
-        num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
+        # Multiply num by trading limit to get actual share trade volume given model method
+        if model.method == NUMDREG_ID:
+            num = config["SHARE_TRADE_LIMIT"] * num.item()
+        else:
+            num = config["SHARE_TRADE_LIMIT"] * num[action_index].item()
 
     # Generate random action and num using epsilon exploration
     if use_exploration:
@@ -197,6 +196,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     losses = []
     rewards = []
     total_profits = []
+    val_rewards = []
+    val_total_profits = []
 
     # initialize env
     env = make_env(index=index, symbol=symbol, dataset=dataset)
@@ -223,12 +224,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             # Update memory buffer to include observed transition
             env.update_replay_memory()
 
-            # DEBUG
-            #print(env.replay_memory[-1])
-
-            #if i > 2:
-            #    assert False
-
             # Update model and increment optimization steps
             loss = optimize_model(model=model, memory=env.replay_memory)
             env.add_loss(loss)
@@ -236,43 +231,48 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             # Update step
             optim_steps += 1
 
-            # If loss was returned, append to losses and printloss every 100 steps
-            if loss and optim_steps % 2000 == 0:
-                # Track rewards and losses
-                # e_rewards.append(reward)
-                # TODO rework for numdreg
-                # e_losses.append(loss[0])
-                print("Episode: {}, Loss: {}".format(e + 1, loss))
-
+            # Break loop if at terminal state
             if done:
                 break
 
+        # Update training performance metrics
         avg_loss, avg_reward, e_profit = env.on_episode_end()
 
-        # Update losses and rewards list with average of each over episode
         losses.append(avg_loss)
         rewards.append(avg_reward)
         total_profits.append(e_profit)
+
+        # Update validation performance metrics
+        e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol, dataset='valid')
+
+        val_rewards.append(sum(e_val_rewards)/len(e_val_rewards))
+        val_total_profits.append(val_total_profit)
 
         # Update policy net with target net
         if e % config["EPISODES_PER_TARGET_UPDATE"] == 0:
             # TODO NEED A TAU
             model.transfer_weights()
+        
+        # Print episode training update
+        print("Episode: {} Complete".format(e + 1))
+        print("Train: avg_reward={}, total_profit={}, avg_loss={}".format(avg_reward, e_profit, avg_loss))
+        print("Valid: avg_reward={}, total_profit={}\n".format(val_rewards[-1], val_total_profit))
 
     print("Training complete")
 
-    return model, losses, rewards, total_profits
+    return model, losses, rewards, val_rewards, total_profits, val_total_profits
 
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
 def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = config["STRATEGY"],
-             only_use_strategy: bool = False):
+             strategy_num: float = config["STRATEGY_NUM"], use_strategy: bool = False, only_use_strategy: bool = False):
     # TODO: Should strategy be None for training?
 
     print(f"Evaluating model on {symbol} from {index} with the {dataset} set...")
 
     # initialize env
+    rewards = []
     profits = []
     running_profits = [0]
     env = make_env(index=index, symbol=symbol, dataset=dataset)
@@ -283,15 +283,15 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         state, done = env.step()
 
         # Select action
-        action_index, num = select_action(model=model, state=state, strategy=strategy, use_exploration=False,
-                                            use_strategy=True, only_use_strategy=only_use_strategy, t=i)
+        action_index, num = select_action(model=model, state=state, strategy=strategy, strategy_num=strategy_num, 
+                                                use_exploration=False, use_strategy=use_strategy, only_use_strategy=only_use_strategy, t=i)
 
         # Compute profit, reward given action_index and num
         profit, reward = env.compute_profit_and_reward(action_index=action_index, num=num)
 
         # Add profits to list
         profits.append(profit)
-        #profits.append(reward)
+        rewards.append(reward)
         running_profits.append(env.episode_profit)
 
         if done:
@@ -299,4 +299,4 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
 
     total_profit = env.episode_profit
     # Return list of profits, running total profits, and total profit
-    return profits, running_profits, total_profit
+    return rewards, profits, running_profits, total_profit
