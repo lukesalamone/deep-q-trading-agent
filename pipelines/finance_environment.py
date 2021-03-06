@@ -213,8 +213,8 @@ class ReplayMemory(object):
         self.memory.append(transition)
 
     def sample(self, batch_size: int):
-        # return random.sample(self.memory, batch_size)
-        return list(self.memory)[-batch_size:]
+        return random.sample(self.memory, batch_size)
+        # return list(self.memory)[-batch_size:]
 
     def __len__(self):
         return len(self.memory)

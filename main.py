@@ -58,7 +58,7 @@ def run_training(model:DQN, index: str, symbol:str, train_dataset:str, valid_dat
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=valid_dataset,
-                                                                      strategy=0,
+                                                                      strategy=2,
                                                                       strategy_num=1.0,
                                                                       only_use_strategy=True)
 
@@ -106,8 +106,8 @@ if __name__ == '__main__':
         'symbol': '^GSPC',
         'train_model': True,
         'eval_model': True,
-        'train_set': 'train',
-        'eval_set': 'valid',
+        'train_set': 'full_train',
+        'eval_set': 'test',
         'load_model': False,
         'IN_PATH': 'weights/numq_test.pt',
         'save_model': True,

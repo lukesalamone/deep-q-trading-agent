@@ -235,6 +235,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
     # Run for the defined number of episodes
     for e in range(episodes):
+        actions_taken = [0, 0, 0]
         # start episode or reset what needs to be reset in the env
         env.start_episode(start_with_padding=False)
 
@@ -248,6 +249,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             if optim_steps % 1000 == 0:
                 print(f"q action : {q_action}")
                 print(f"num t : {num_t}")
+
+            actions_taken[action_index] += 1
             # Compute profit, reward given action_index and num
             # env.compute_profit_and_reward(action_index=action_index, num=num)
             # compute all rewards
@@ -269,6 +272,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
             # Break loop if at terminal state
             if done:
+                print(f"actions taken : {actions_taken}")
                 break
 
         # Update training performance metrics
