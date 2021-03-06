@@ -22,17 +22,9 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                        index=index,
                                                        symbol=symbol,
                                                        dataset=dataset)
-    # MKT trading 10 share
-    mkt10_rewards, mkt10_profits, mkt10_running_profits, mkt10_total_profits = evaluate(model,
-                                                                      index=index,
-                                                                      symbol=symbol,
-                                                                      dataset=dataset,
-                                                                      strategy=0,
-                                                                      strategy_num=10.0,
-                                                                      only_use_strategy=True)
     
-    # MKT trading 1 share
-    mkt1_rewards, mkt1_profits, mkt1_running_profits, mkt1_total_profits = evaluate(model,
+    # MKT buying and holding 1 share
+    mkt_rewards, mkt_profits, mkt_running_profits, mkt_total_profits = evaluate(model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=dataset,
@@ -40,34 +32,52 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                                       strategy_num=1.0,
                                                                       only_use_strategy=True)
 
-    print(f"TOTAL MKT-10 PROFITS : {mkt10_total_profits}")
-    print(f"TOTAL MKT-1 PROFITS : {mkt1_total_profits}")
+    print(f"TOTAL MKT PROFITS : {mkt_total_profits}")
     print(f"TOTAL AGENT PROFITS : {total_profits}")
-    plt.plot(list(range(len(running_profits))), running_profits, label="Trading Agent")
-    plt.plot(list(range(len(mkt10_running_profits))), mkt10_running_profits, label="MKT-10")
-    plt.plot(list(range(len(mkt1_running_profits))), mkt1_running_profits, label="MKT-1")
+    plt.plot(list(range(len(running_profits))), running_profits, label="Trading Agent", color="blue")
+    plt.plot(list(range(len(mkt_running_profits))), mkt_running_profits, label="MKT", color="black")
     plt.legend()
     plt.savefig("plots/evaluation.png")
     plt.title("Eval Profits")
     plt.show()
 
-def run_training(model:DQN, index: str, symbol:str, dataset:str):
-    model, losses, rewards, val_rewards, profits, val_profits = train(model=model, index=index, symbol=symbol, dataset=dataset)
+def run_training(model:DQN, index: str, symbol:str, train_dataset:str, valid_dataset:str):
+    model, losses, rewards, val_rewards, profits, val_profits = train(model=model, index=index, symbol=symbol, dataset=train_dataset)
+
+    # MKT on training
+    mkt_train_rewards, mkt_train_profits, mkt_train_running_profits, mkt_train_total_profits = evaluate(model,
+                                                                      index=index,
+                                                                      symbol=symbol,
+                                                                      dataset=train_dataset,
+                                                                      strategy=0,
+                                                                      strategy_num=1.0,
+                                                                      only_use_strategy=True)
+    
+    # MKT on validation
+    mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
+                                                                      index=index,
+                                                                      symbol=symbol,
+                                                                      dataset=valid_dataset,
+                                                                      strategy=0,
+                                                                      strategy_num=1.0,
+                                                                      only_use_strategy=True)
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
     plt.savefig("plots/losses.png")
     plt.show()
 
-    plt.plot(list(range(len(rewards))), rewards, label="Training")
-    plt.plot(list(range(len(val_rewards))), val_rewards, label="Validation")
+    plt.plot(list(range(len(rewards))), rewards, label="Training", color="lightblue")
+    plt.plot(list(range(len(val_rewards))), val_rewards, label="Validation", color="blue")
     plt.title("Rewards")
     plt.savefig("plots/rewards.png")
     plt.legend()
     plt.show()
 
-    plt.plot(list(range(len(profits))), profits, label="Training")
-    plt.plot(list(range(len(val_profits))), val_profits, label="Validation")
+    plt.plot(list(range(len(profits))), profits, label="Training", color="lightblue")
+    plt.plot(list(range(len(val_profits))), val_profits, label="Validation", color="blue")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_train_total_profits], label="MKT-Train", color="gray")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid", color="black")
     plt.title("Total Profits")
     plt.savefig("plots/profits.png")
     plt.legend()
@@ -80,7 +90,7 @@ def run_experiment(**kwargs):
         model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
 
     if kwargs['train_model'] and kwargs['train_set']:
-        run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['train_set'])
+        run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'], train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'])
 
         if kwargs['save_model'] and kwargs['OUT_PATH']:
             save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
