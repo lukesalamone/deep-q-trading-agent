@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 import torch
 from torch import Tensor
@@ -120,6 +120,25 @@ class FinanceEnvironment:
 
         return profit, reward
 
+    def compute_reward_all_actions(self, action_index: int, num_t: List[float]):
+
+        profit, reward = self.compute_profit_and_reward(action_index=action_index, num=num_t[action_index])
+
+        rewards_all_actions = []
+
+        for index, action in enumerate(self.action_space):
+            action_reward = _reward(num=num_t[index],
+                             action_value=action,
+                             price=self.price,
+                             prev_price=self.prev_price,
+                             init_price=self.init_price)
+
+            rewards_all_actions.append(action_reward)
+
+        self.rewards_all_actions = torch.tensor(rewards_all_actions)
+
+        return profit, reward, rewards_all_actions
+
     def add_loss(self, loss):
         if loss is None:
             return
@@ -131,7 +150,8 @@ class FinanceEnvironment:
         # checks if torch tensor is empty
         if self.next_state.numel():
             self.replay_memory.update(
-                (self.state, self.action, self.reward, self.next_state)
+                # (self.state, self.action, self.reward, self.next_state)
+                (self.state, self.action, self.rewards_all_actions, self.next_state)
             )
 
     def on_episode_end(self):
@@ -164,12 +184,27 @@ def _profit(num: float, action_value: int, price: float, prev_price: float) -> f
     """
     return num * action_value * (price - prev_price) / prev_price
 
+def _batch_reward(num: Tensor, actions: Tensor, price: Tensor, prev_price: Tensor, init_price:Tensor) -> Tensor:
+    """
+
+    :param num: (64, 3)
+    :param actions: (3, )
+    :param price: (64, 1)
+    :param prev_price: (64, 1)
+    :param init_price: (64, 1)
+    :return:
+    """
+    reward = 1 + actions * (price - prev_price) / prev_price
+    reward = num * reward * prev_price / init_price
+    return reward
+
 
 class ReplayMemory(object):
     def __init__(self, capacity: int):
         self.memory = deque(maxlen=capacity)
 
-    def update(self, transition: Tuple[Tensor, int, float, Tensor]):
+    # def update(self, transition: Tuple[Tensor, int, float, Tensor]):
+    def update(self, transition: Tuple[Tensor, int, Tensor, Tensor]):
         """
         Saves a transition
         :param transition: (state, action_index, reward, next_state)

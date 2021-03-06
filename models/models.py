@@ -43,6 +43,8 @@ class DQN():
     def soft_update(self, tau: float):
         """Soft update model parameters.
         θ_target = τ*θ_policy + (1 - τ)*θ_target
+        TAU = 0.00003
+        θ_target = 0.00003*θ_policy + 0.99997*θ_target
         :param tau: interpolation parameter
         :return:
         """
