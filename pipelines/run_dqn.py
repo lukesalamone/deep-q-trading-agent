@@ -205,11 +205,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             # Update step
             optim_steps += 1
 
-            # Update policy net with target net
-            if optim_steps % config["STEPS_PER_TARGET_UPDATE"] == 0:
-                # TODO NEED A TAU?
-                model.transfer_weights()
-
             # Break loop if at terminal state
             if done:
                 break
@@ -230,6 +225,11 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         # Update epsilon
         # TODO like this or a decay factor?
         epsilon = (1 - (e / episodes)) * config["EPSILON"]
+
+        # Update policy net with target net
+        if optim_steps % config["EPISODES_PER_TARGET_UPDATE"] == 0:
+            # TODO NEED A TAU?
+            model.transfer_weights()
         
         # Print episode training update
         print("Episode: {} Complete".format(e + 1))
