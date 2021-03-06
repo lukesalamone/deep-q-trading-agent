@@ -8,7 +8,7 @@ with open("config.yml", "r") as ymlfile:
 
 def load_weights(model:DQN, IN_PATH):
     model.policy_net.load_state_dict(torch.load(IN_PATH))
-    model.transfer_weights()
+    model.hard_update()
     return model
 
 def save_weights(model:DQN, OUT_PATH):

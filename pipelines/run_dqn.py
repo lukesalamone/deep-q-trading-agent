@@ -229,8 +229,10 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         # Update policy net with target net
         if optim_steps % config["EPISODES_PER_TARGET_UPDATE"] == 0:
             # TODO NEED A TAU?
-            model.transfer_weights()
-        
+            # model.hard_update()
+            model.soft_update(tau=config["TAU"])
+
+
         # Print episode training update
         print("Episode: {} Complete".format(e + 1))
         print("Train: avg_reward={}, total_profit={}, avg_loss={}".format(avg_reward, e_profit, avg_loss))
