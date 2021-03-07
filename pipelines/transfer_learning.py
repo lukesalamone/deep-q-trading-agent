@@ -102,7 +102,6 @@ def mininet_pipeline():
 
     return model
 
-
 def gather_groups():
     group_sizes = {'djia':4, 'gspc':6, 'nasdaq':6, 'nyse':8}
     groups = {}
