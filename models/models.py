@@ -43,21 +43,11 @@ class DQN():
     def soft_update(self, tau: float):
         """Soft update model parameters.
         θ_target = τ*θ_policy + (1 - τ)*θ_target
-        TAU = 0.00003
-        θ_target = 0.00003*θ_policy + 0.99997*θ_target
         :param tau: interpolation parameter
         :return:
         """
         for target_param, policy_param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(tau * policy_param.data + (1.0 - tau) * target_param.data)
-
-    def action_index_to_value(self, action_index: int) -> int:
-        """
-        Given the index of the action, return the value
-        :param action_index: action index (BUY=0, HOLD=1, SELL=2)
-        :return: 1 - action index (BUY=1, HOLD=0, SELL=-1)
-        """
-        return 1 - action_index
 
 
 class NumQModel(nn.Module):

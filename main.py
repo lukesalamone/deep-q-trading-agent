@@ -1,5 +1,6 @@
 from models.models import *
-from pipelines.run_dqn import train, evaluate
+# from pipelines.run_dqn import train, evaluate
+from pipelines.run_numq import train, evaluate
 import matplotlib.pyplot as plt
 import yaml
 
@@ -108,7 +109,7 @@ if __name__ == '__main__':
         'symbol': '^GSPC',
         'train_model': True,
         'eval_model': True,
-        'train_set': 'full_train',
+        'train_set': 'train',
         'eval_set': 'valid',
         'load_model': False,
         'IN_PATH': 'weights/numq_test.pt',
