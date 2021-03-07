@@ -207,7 +207,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         # start episode or reset what needs to be reset in the env
         env.start_episode(start_with_padding=False)
         actions = [0,0,0]
-        optimal_actions = [0,0,0]
 
         # iterate until done
         for i in count():
@@ -220,8 +219,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
             # Compute profit, reward given action_index and num
             _, _, optimal = env.compute_profit_and_reward(action_index=action_index, num=num)
-
-            optimal_actions[optimal] += 1
 
             # DEBUG
             #if i > -1:
@@ -260,7 +257,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             model.transfer_weights()
 
         print(f'actions taken: {actions[0]} buys, {actions[1]} holds, {actions[2]} sells')
-        print(f'optimal actions: {optimal_actions[0]} buys, {optimal_actions[2]} sells')
 
         # Print episode training update
         print("Episode: {} Complete".format(e + 1))
