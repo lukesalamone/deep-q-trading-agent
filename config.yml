@@ -2,6 +2,7 @@
 RAW_DATA_PATH: 'data'
 CLEAN_DATA_PATH: 'data_clean'
 STOCK_DATA_PATH: 'stock_data'
+STONK_PATH: 'stonks'
 ALLOWED_DATASETS: ['gspc', 'hsi', 'ks11', 'sx5e']
 INDEX_SYMBOLS: { '^GSPC', '^HSI', '^KOSPI' }
 INDEX_SPLITS: {

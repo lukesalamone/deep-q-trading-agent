@@ -120,7 +120,7 @@ class NumDRegModel(nn.Module):
         self.step = s
 
 
-class Net(nn.Module):
+class StonksNet(nn.Module):
     def __init__(self, size=100):
         super().__init__()
         self.size = size
