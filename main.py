@@ -1,6 +1,7 @@
 from models.models import *
 # from pipelines.run_dqn import train, evaluate
 from pipelines.run_numq import train, evaluate
+from pipelines.run_nenq import run_nenq_on_index
 import matplotlib.pyplot as plt
 import yaml
 
@@ -138,7 +139,6 @@ def run_experiment(**kwargs):
         else:
             run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['eval_set'])
 
-
 if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
@@ -159,4 +159,6 @@ if __name__ == '__main__':
         'use strategy': False
     }
 
-    run_experiment(**experiment_args)
+    # run_experiment(**experiment_args)
+    run_nenq_on_index(index='djia', symbol='^DJI', train_set='train', eval_set='valid',
+                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
