@@ -20,7 +20,6 @@ def save_weights(model: DQN, OUT_PATH):
 
 
 def run_evaluations(model: DQN, index: str, symbol: str, dataset: str):
-    # def run_evaluations(model:DQN, dataset:str, eval_set:str):
     rewards, profits, running_profits, total_profits = evaluate(model,
                                                                 index=index,
                                                                 symbol=symbol,
@@ -60,7 +59,7 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
                                                                                                         only_use_strategy=True)
 
     # MKT on validation
-    print('MKT SELL on Eval Set')
+    print('MKT BUY on Eval Set')
     mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
                                                                                                         index=index,
                                                                                                         symbol=symbol,

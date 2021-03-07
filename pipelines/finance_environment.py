@@ -216,8 +216,7 @@ def make_env(index: str, symbol: str, dataset:str):
     return FinanceEnvironment(price_history=prices, index=index, dataset=dataset)
 
 
-def load_prices(index: str, symbol: str):
-    path = config["STOCK_DATA_PATH"]
+def load_prices(index: str, symbol: str, path: str=config["STOCK_DATA_PATH"]):
     file = f"{index}/{symbol}.csv"
     df = pd.read_csv(os.path.join(path, file))
     # first, second columns to datetime, float64
