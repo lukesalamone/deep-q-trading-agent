@@ -23,6 +23,8 @@ def pretrain_on_group(profits: Dict, groups: Dict, index:str, method: str, group
                                                                           symbol=symbol,
                                                                           episodes=10,
                                                                           dataset='train')
+
+        # TODO EVALUATE MODEL HERE AND ADD PTOFIT TO PROFITS
         current_weights = f'weights/numq/{index}/{method}/{group}/numq_{symbol}_{i+1}.pt'
         save_weights(model=model, OUT_PATH=current_weights)
 
