@@ -2,7 +2,7 @@
 RAW_DATA_PATH: 'data'
 CLEAN_DATA_PATH: 'data_clean'
 STOCK_DATA_PATH: 'stock_data'
-STONK_DATA: 'stonks'
+STONK_PATH: 'stonks'
 ALLOWED_DATASETS: ['gspc', 'hsi', 'ks11', 'sx5e']
 INDEX_SYMBOLS: { '^GSPC', '^HSI', '^KOSPI' }
 INDEX_SPLITS: {
@@ -20,14 +20,13 @@ STONKS_SPLITS: {
   "TEST": ["2015-03-31", "2020-06-12"]
 }
 
-
 LOOKBACK: 200
 REWARD_WINDOW: 100
 
 # Model
 SHARE_TRADE_LIMIT: 10
 STRATEGY: 1
-STRATEGY_NUM: 10
+STRATEGY_NUM: 1.0
 THRESHOLD: 0.2
 
 # Training

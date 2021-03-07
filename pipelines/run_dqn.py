@@ -8,7 +8,6 @@ from torch import optim, Tensor
 import yaml
 from itertools import count
 
-from .build_batches import get_episode
 from .finance_environment import make_env, ReplayMemory, _reward, _profit
 from models.models import *
 
@@ -19,7 +18,8 @@ with open("config.yml", "r") as ymlfile:
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, epsilon:float, t:int, strategy: int=config["STRATEGY"], strategy_num: float=config["STRATEGY_NUM"], use_strategy=False, only_use_strategy=False):
+def select_action(model: DQN, state: Tensor, epsilon: float, t: int, strategy: int = config["STRATEGY"],
+                  strategy_num: float = config["STRATEGY_NUM"], use_strategy=False, only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -44,13 +44,14 @@ def select_action(model: DQN, state: Tensor, epsilon:float, t:int, strategy: int
 
     # Generate random action and num using epsilon exploration
     if random.random() < epsilon:
-        action_index = random.randint(0,  2)
+        action_index = random.randint(0, 2)
 
     if random.random() < epsilon:
         num = random.uniform(0, 1)
 
     # If confidence is high enough, return the action of the highest q value
     return action_index, num
+
 
 def get_actions_and_num(model: DQN, state: Tensor, epsilon: float):
     # Get q values for this state
@@ -68,7 +69,7 @@ def get_actions_and_num(model: DQN, state: Tensor, epsilon: float):
         num = config["SHARE_TRADE_LIMIT"] * num
 
     if random.random() < epsilon:
-        action_index = random.randint(0,  2)
+        action_index = random.randint(0, 2)
     else:
         action_index = np.argmax(q)
 
@@ -94,9 +95,10 @@ def optimize_model(model: DQN, optimizer, memory: ReplayMemory):
     # Optimize model given specified method
     if model.method == NUMQ:
         # loss = optimize_numq(model=model, optimizer=optimizer, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
-        loss = optimize_numq_all_actions(model=model, optimizer=optimizer, state_batch=state_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+        loss = optimize_numq_all_actions(model=model, optimizer=optimizer, state_batch=state_batch,
+                                         reward_batch=reward_batch, next_state_batch=next_state_batch)
         return (loss,)
-    
+
     # TODO - a bunch of stuff here and use passed in optimizer
     elif model.method == NUMDREG_AD or model.method == NUMDREG_ID:
         # Optimize on step 1
@@ -146,6 +148,7 @@ def optimize_numq(model, optimizer, state_batch, action_batch, reward_batch, nex
     # Return loss value
     return loss.item()
 
+
 def optimize_numq_all_actions(model, optimizer, state_batch, reward_batch, next_state_batch):
     # Get q values from policy net (track gradients only for policy net)
     q_batch, num_batch = model.policy_net(state_batch)
@@ -182,6 +185,7 @@ def optimize_numq_all_actions(model, optimizer, state_batch, reward_batch, next_
 
     # Return loss value
     return loss.item()
+
 
 def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_batch):
     # Initialize optimizer
@@ -221,7 +225,7 @@ def optimize_numdreg(model, state_batch, action_batch, reward_batch, next_state_
 
 # Train model on given training data
 def train(model: DQN, index: str, symbol: str, dataset: str,
-          episodes: int=config["EPISODES"], strategy: int=config["STRATEGY"]):
+          episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"]):
     print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
     optim_steps = 0
@@ -247,7 +251,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         # iterate until done
         for i in count():
             state, done = env.step()
-            
+
             # Get action index and num shares to trade
             # action_index, num = select_action(model=model, state=state, epsilon=epsilon, t=i, use_strategy=False)
             action_index, q_action, num = get_actions_and_num(model=model, state=state, epsilon=epsilon)
@@ -287,7 +291,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         # Update validation performance metrics
         e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol, dataset='valid')
 
-        val_rewards.append(sum(e_val_rewards)/len(e_val_rewards))
+        val_rewards.append(sum(e_val_rewards) / len(e_val_rewards))
         val_total_profits.append(val_total_profit)
 
         # Update epsilon
@@ -299,7 +303,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             if optim_steps % config["EPISODES_PER_TARGET_UPDATE"] == 0:
                 model.hard_update()
 
-
         # Print episode training update
         print("Episode: {} Complete".format(e + 1))
         print("Train: avg_reward={}, total_profit={}, avg_loss={}".format(avg_reward, e_profit, avg_loss))
@@ -309,10 +312,11 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
     return model, losses, rewards, val_rewards, total_profits, val_total_profits
 
+
 # Evaluate model on validation or test set and return profits
 # Returns a list of profits and total profit
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
-def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = config["STRATEGY"],
+def evaluate(model: DQN, index: str, symbol: str, dataset: str, strategy: int = config["STRATEGY"],
              strategy_num: float = config["STRATEGY_NUM"], use_strategy: bool = False, only_use_strategy: bool = False):
     # TODO: Should strategy be None for training?
 
@@ -331,8 +335,9 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         state, done = env.step()
 
         # Select action
-        action_index, num = select_action(model=model, state=state, strategy=strategy, strategy_num=strategy_num, epsilon=0, 
-                                                use_strategy=use_strategy, only_use_strategy=only_use_strategy, t=i)
+        action_index, num = select_action(model=model, state=state, strategy=strategy, strategy_num=strategy_num,
+                                          epsilon=0,
+                                          use_strategy=use_strategy, only_use_strategy=only_use_strategy, t=i)
 
         # log actions
         actions_taken[action_index] += 1

@@ -120,9 +120,10 @@ class NumDRegModel(nn.Module):
         self.step = s
 
 
-class Net(nn.Module):
-    def __init__(self, size):
+class StonksNet(nn.Module):
+    def __init__(self, size=100):
         super().__init__()
+        self.size = size
         self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
         self.out = nn.Linear(in_features=5, out_features=size, bias=True)
 
