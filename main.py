@@ -33,6 +33,7 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str):
                                                                                 dataset=dataset,
                                                                                 strategy=0,
                                                                                 strategy_num=1.0,
+                                                                                use_strategy=True,
                                                                                 only_use_strategy=True)
 
     print(f"TOTAL MKT PROFITS : {mkt_total_profits}")
@@ -60,7 +61,7 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
                                                                                                         only_use_strategy=True)
 
     # MKT on validation
-    print('MKT SELL on Eval Set')
+    print('MKT BUY on Validation')
     mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
                                                                                                         index=index,
                                                                                                         symbol=symbol,
@@ -83,10 +84,8 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
 
     plt.plot(list(range(len(profits))), profits, label="Training", color="lightblue")
     plt.plot(list(range(len(val_profits))), val_profits, label="Validation", color="blue")
-    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_train_total_profits], label="MKT-Train",
-             color="gray")
-    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid",
-             color="black")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_train_total_profits], label="MKT-Train", color="gray")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid", color="black")
     plt.title("Total Profits")
     plt.savefig("plots/profits.png")
     plt.legend()
