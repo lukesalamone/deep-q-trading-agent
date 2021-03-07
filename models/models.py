@@ -121,10 +121,11 @@ class NumDRegModel(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, size=100):
         super().__init__()
-        self.fc1 = nn.Linear(in_features=1, out_features=5, bias=True)
-        self.out = nn.Linear(in_features=5, out_features=1, bias=True)
+        self.size = size
+        self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
+        self.out = nn.Linear(in_features=5, out_features=size, bias=True)
 
     def forward(self, x: Tensor) -> Tensor:
         x = F.relu(self.fc1(x))

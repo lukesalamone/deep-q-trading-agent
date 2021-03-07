@@ -206,6 +206,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     for e in range(episodes):
         # start episode or reset what needs to be reset in the env
         env.start_episode(start_with_padding=False)
+        actions = [0,0,0]
+        optimal_actions = [0,0,0]
 
         # iterate until done
         for i in count():
@@ -214,8 +216,12 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             action_index, num = select_action(model=model, state=state, t=i, use_exploration=True, use_strategy=False)
             # action_index, num = select_action(model=model, state=state, strategy=strategy, t=i)
 
+            actions[action_index] += 1
+
             # Compute profit, reward given action_index and num
-            env.compute_profit_and_reward(action_index=action_index, num=num)
+            _, _, optimal = env.compute_profit_and_reward(action_index=action_index, num=num)
+
+            optimal_actions[optimal] += 1
 
             # DEBUG
             #if i > -1:
@@ -252,7 +258,10 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         if e % config["EPISODES_PER_TARGET_UPDATE"] == 0:
             # TODO NEED A TAU
             model.transfer_weights()
-        
+
+        print(f'actions taken: {actions[0]} buys, {actions[1]} holds, {actions[2]} sells')
+        print(f'optimal actions: {optimal_actions[0]} buys, {optimal_actions[2]} sells')
+
         # Print episode training update
         print("Episode: {} Complete".format(e + 1))
         print("Train: avg_reward={}, total_profit={}, avg_loss={}".format(avg_reward, e_profit, avg_loss))
@@ -287,7 +296,7 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
                                                 use_exploration=False, use_strategy=use_strategy, only_use_strategy=only_use_strategy, t=i)
 
         # Compute profit, reward given action_index and num
-        profit, reward = env.compute_profit_and_reward(action_index=action_index, num=num)
+        profit, reward, _ = env.compute_profit_and_reward(action_index=action_index, num=num)
 
         # Add profits to list
         profits.append(profit)

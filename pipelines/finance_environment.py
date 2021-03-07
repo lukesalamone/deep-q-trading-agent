@@ -99,6 +99,8 @@ class FinanceEnvironment:
         self.action = action_index
         self.num = num
 
+        optimal_action = 0 if self.price > self.prev_price else 2
+
         action_value = self.action_space[action_index]
 
         profit = _profit(num=num,
@@ -118,7 +120,7 @@ class FinanceEnvironment:
         self.episode_rewards.append(reward)
         self.episode_profit += profit
 
-        return profit, reward
+        return profit, reward, optimal_action
 
     def add_loss(self, loss):
         if loss is None:
