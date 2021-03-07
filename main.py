@@ -38,7 +38,7 @@ def run_evaluations(model:DQN, index:str, symbol:str, dataset:str):
                                                                       symbol=symbol,
                                                                       dataset=dataset,
                                                                       strategy=0,
-                                                                      strategy_num=0.1,
+                                                                      strategy_num=1.0,
                                                                       only_use_strategy=True)
 
     print(f"TOTAL MKT-10 PROFITS : {mkt10_total_profits}")
