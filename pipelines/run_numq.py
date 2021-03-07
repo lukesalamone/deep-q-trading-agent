@@ -97,8 +97,9 @@ def optimize_numq(model, optimizer, state_batch, reward_batch, next_state_batch)
 
 # Train model on given training data
 def train(model: DQN, index: str, symbol: str, dataset: str,
-          episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"],
-          path:str = config["STOCK_DATA_PATH"],
+          episodes: int = config["EPISODES"], strategy:int=config["STRATEGY"],
+          use_strategy: bool=config["USE_STRATEGY_TRAIN"],
+          path:str=config["STOCK_DATA_PATH"],
           splits=config["INDEX_SPLITS"]):
 
     print(f"Training model on {symbol} from {index} with the {dataset} set...")
@@ -190,7 +191,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
 def evaluate(model: DQN, index: str, symbol: str, dataset: str,
              strategy: int = config["STRATEGY"], strategy_num: float = config["STRATEGY_NUM"],
-             use_strategy: bool = False, only_use_strategy: bool = False,
+             use_strategy: bool=False, only_use_strategy: bool = False,
              path:str = config["STOCK_DATA_PATH"],
              splits=config["INDEX_SPLITS"]
              ):
@@ -212,7 +213,8 @@ def evaluate(model: DQN, index: str, symbol: str, dataset: str,
         state, done = env.step()
 
         # Select action
-        action_index, _, num = select_action(model=model, state=state, use_strategy=use_strategy, only_use_strategy=only_use_strategy)
+        action_index, _, num = select_action(model=model, state=state, strategy=strategy,
+                                             use_strategy=use_strategy, only_use_strategy=only_use_strategy)
 
         # log actions
         actions_taken[action_index] += 1

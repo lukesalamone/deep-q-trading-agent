@@ -49,12 +49,16 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
     plt.show()
 
 
-def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str,
+def run_training(model: DQN, index: str, symbol: str,
+                 train_dataset: str, valid_dataset: str,
+                 strategy: int=1, use_strategy: bool=False,
                  path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=train_dataset,
+                                                                      strategy=strategy,
+                                                                      use_strategy=use_strategy,
                                                                       path=path,
                                                                       splits=splits)
 
@@ -117,10 +121,12 @@ def run_experiment(**kwargs):
         if kwargs['path'] and kwargs['splits']:
             model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
                                  train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'],
+                                 strategy=kwargs['train strategy'], use_strategy=kwargs['use strategy'],
                                  path=kwargs['path'], splits=kwargs['splits'])
         else:
             model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
-                             train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'])
+                                 train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'],
+                                 strategy=kwargs['train strategy'], use_strategy=kwargs['use strategy'])
 
         if kwargs['save_model'] and kwargs['OUT_PATH']:
             save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
@@ -137,8 +143,8 @@ if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
         'method': NUMQ,
-        'index': 'nyse',
-        'symbol': '^NYA',
+        'index': 'gspc',
+        'symbol': '^GSPC',
         'train_model': True,
         'eval_model': True,
         'train_set': 'train',
@@ -148,7 +154,9 @@ if __name__ == '__main__':
         'save_model': False,
         'OUT_PATH': 'weights/numq_test.pt',
         'path': config['STONK_PATH'],
-        'splits': config['STONK_INDEX_SPLITS']
+        'splits': config['STONK_INDEX_SPLITS'],
+        'train strategy': 1,
+        'use strategy': False
     }
 
     run_experiment(**experiment_args)
