@@ -62,5 +62,10 @@ def train_test_splits(prices: np.array) -> Tuple[np.array, np.array]:
     return train, test
 
 
+def load_relationship_info(type, index):
+    path = os.path.join(config['STONK_PATH'], 'relationships', type, f'{index}.csv')
+    return pd.read_csv(path)
+
+
 if __name__ == '__main__':
     print(index_component_names('gspc'))
