@@ -48,12 +48,14 @@ class FinanceEnvironment:
         price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
         self.price_differences = torch.from_numpy(price_differences.values)
 
-    def start_episode(self):
+    def start_episode(self, start_with_padding=True):
         self.episode_losses = []
         self.episode_rewards = []
         self.episode_profit = 0
         # update step value because of padding and start index
         self.time_step = self.lookback + self.start_index
+        if not start_with_padding:
+            self.time_step += self.lookback
 
     def step(self):
         # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-lookback
@@ -63,7 +65,6 @@ class FinanceEnvironment:
 
         # get the state as the day to day price differences from timestep-n to timestep
         self.state = self.price_differences[self.time_step - self.lookback:self.time_step]
-        assert self.state.size() == torch.Size([self.lookback])
 
         # check the date at index step.
         # If it's past the end date, we are at the end of the episode
@@ -81,6 +82,18 @@ class FinanceEnvironment:
 
         return self.state, end
 
+    def print_values(self):
+        print("TIME: ", self.time_step)
+        print("STATE: ", self.state)
+        print("NEXT STATE: ", self.next_state)
+        print("CURR PRICE: ", self.price)
+        print("PREV PRICE: ", self.prev_price)
+        print("INIT PRICE: ", self.init_price)
+        print("ACTION INDEX: ", self.action)
+        print("ACTION VALUE: ", self.action_space[self.action])
+        print("NUM: ", self.num)
+        print("PROFIT: ", self.profit)
+        print("REWARD: ", self.reward)
 
     def compute_profit_and_reward(self, action_index: int, num: float):
         self.action = action_index
@@ -99,6 +112,7 @@ class FinanceEnvironment:
                          prev_price=self.prev_price,
                          init_price=self.init_price)
 
+        self.profit = profit
         self.reward = reward
 
         self.episode_rewards.append(reward)

@@ -49,12 +49,9 @@ def _build_episode(prices:List[float]) -> List[Tuple[Tensor, Tensor, float, floa
     for i in range(len(states) - config["LOOKBACK"]):
         state = states[i:config["LOOKBACK"]+i]
         next_state = states[i+1:config["LOOKBACK"]+i+1]
-        price = today_prices[config["LOOKBACK"] + i - 1]
-        prev_price = yesterday_prices[config["LOOKBACK"] + i - 1]
+        price = today_prices[config["LOOKBACK"]+i-1]
+        prev_price = yesterday_prices[config["LOOKBACK"]+i-1]
         sample = (state, next_state, price, prev_price, today_prices[i])
-        # price = today_prices[i]
-        # prev_price = yesterday_prices[i]
-        # sample = (state, next_state, price, prev_price, today_prices[0])
         episode.append(sample)
     return episode
 
