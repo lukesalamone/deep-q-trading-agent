@@ -109,7 +109,7 @@ if __name__ == '__main__':
         'train_model': True,
         'eval_model': True,
         'train_set': 'full_train',
-        'eval_set': 'test',
+        'eval_set': 'valid',
         'load_model': False,
         'IN_PATH': 'weights/numq_test.pt',
         'save_model': True,
