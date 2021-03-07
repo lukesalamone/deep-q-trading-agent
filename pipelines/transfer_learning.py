@@ -1,17 +1,9 @@
-from typing import Tuple
-import numpy as np
 from torch import optim
 from torch.nn import functional as F
-from torch.utils.data import DataLoader
 from models.models import StonksNet
-from utils.transfer_data import init_dataset
 import torch
-import pandas as pd
 
 from utils.load_file import *
-
-def compute_correlation(x: np.array, y: np.array) -> float:
-    return np.corrcoef(x, y)[0,1]
 
 def fake_prices(size, num_samples):
     return [torch.rand(size) for _ in range(num_samples)]
@@ -137,7 +129,9 @@ def gather_groups():
         group['mse']['low'] = mse[-size:]
         group['mse']['highlow'] = mse[-hs:] + mse[0:hs]
 
-        return group
+        groups[index] = group
+
+    return groups
 
 
 if __name__ == '__main__':
