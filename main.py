@@ -19,11 +19,14 @@ def save_weights(model: DQN, OUT_PATH):
     return
 
 
-def run_evaluations(model: DQN, index: str, symbol: str, dataset: str):
+def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
+                    path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
     rewards, profits, running_profits, total_profits = evaluate(model,
                                                                 index=index,
                                                                 symbol=symbol,
-                                                                dataset=dataset)
+                                                                dataset=dataset,
+                                                                path=path,
+                                                                splits=splits)
 
     # MKT buying and holding 1 share
     mkt_rewards, mkt_profits, mkt_running_profits, mkt_total_profits = evaluate(model,
@@ -32,7 +35,9 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str):
                                                                                 dataset=dataset,
                                                                                 strategy=0,
                                                                                 strategy_num=1.0,
-                                                                                only_use_strategy=True)
+                                                                                only_use_strategy=True,
+                                                                                path=path,
+                                                                                splits=splits)
 
     print(f"TOTAL MKT PROFITS : {mkt_total_profits}")
     print(f"TOTAL AGENT PROFITS : {total_profits}")
@@ -44,9 +49,14 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str):
     plt.show()
 
 
-def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str):
-    model, losses, rewards, val_rewards, profits, val_profits = train(model=model, index=index, symbol=symbol,
-                                                                      dataset=train_dataset)
+def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str,
+                 path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
+    model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
+                                                                      index=index,
+                                                                      symbol=symbol,
+                                                                      dataset=train_dataset,
+                                                                      path=path,
+                                                                      splits=splits)
 
     # MKT on training
     print('MKT BUY on Training')
@@ -56,7 +66,9 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
                                                                                                         dataset=train_dataset,
                                                                                                         strategy=0,
                                                                                                         strategy_num=1.0,
-                                                                                                        only_use_strategy=True)
+                                                                                                        only_use_strategy=True,
+                                                                                                        path=path,
+                                                                                                        splits=splits)
 
     # MKT on validation
     print('MKT BUY on Eval Set')
@@ -66,7 +78,9 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
                                                                                                         dataset=valid_dataset,
                                                                                                         strategy=0,
                                                                                                         strategy_num=1.0,
-                                                                                                        only_use_strategy=True)
+                                                                                                        only_use_strategy=True,
+                                                                                                        path=path,
+                                                                                                        splits=splits)
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
@@ -90,6 +104,7 @@ def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_
     plt.savefig("plots/profits.png")
     plt.legend()
     plt.show()
+    return model
 
 
 def run_experiment(**kwargs):
@@ -99,30 +114,41 @@ def run_experiment(**kwargs):
         model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
 
     if kwargs['train_model'] and kwargs['train_set']:
-        run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'], train_dataset=kwargs['train_set'],
-                     valid_dataset=kwargs['eval_set'])
+        if kwargs['path'] and kwargs['splits']:
+            model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
+                                 train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'],
+                                 path=kwargs['path'], splits=kwargs['splits'])
+        else:
+            model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
+                             train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'])
 
         if kwargs['save_model'] and kwargs['OUT_PATH']:
             save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
 
     if kwargs['eval_model'] and kwargs['eval_set']:
-        run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['eval_set'])
+        if kwargs['path'] and kwargs['splits']:
+            run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
+                            dataset=kwargs['eval_set'], path=kwargs['path'], splits=kwargs['splits'])
+        else:
+            run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['eval_set'])
 
 
 if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
         'method': NUMQ,
-        'index': 'gspc',
-        'symbol': '^GSPC',
+        'index': 'nyse',
+        'symbol': '^NYA',
         'train_model': True,
         'eval_model': True,
         'train_set': 'train',
         'eval_set': 'valid',
         'load_model': False,
         'IN_PATH': 'weights/numq_test.pt',
-        'save_model': True,
-        'OUT_PATH': 'weights/numq_test.pt'
+        'save_model': False,
+        'OUT_PATH': 'weights/numq_test.pt',
+        'path': config['STONK_PATH'],
+        'splits': config['STONK_INDEX_SPLITS']
     }
 
     run_experiment(**experiment_args)

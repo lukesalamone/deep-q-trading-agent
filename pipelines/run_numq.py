@@ -97,7 +97,9 @@ def optimize_numq(model, optimizer, state_batch, reward_batch, next_state_batch)
 
 # Train model on given training data
 def train(model: DQN, index: str, symbol: str, dataset: str,
-          episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"]):
+          episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"],
+          path:str = config["STOCK_DATA_PATH"],
+          splits=config["INDEX_SPLITS"]):
 
     print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
@@ -113,7 +115,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
 
     # initialize env
-    env = make_env(index=index, symbol=symbol, dataset=dataset)
+    env = make_env(index=index, symbol=symbol, dataset=dataset, path=path, splits=splits)
 
     # Run for the defined number of episodes
     for e in range(episodes):
@@ -162,7 +164,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         total_profits.append(e_profit)
 
         # Update validation performance metrics
-        e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol, dataset='valid')
+        e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol,
+                                                         dataset='valid', path=path, splits=splits)
 
         val_rewards.append(sum(e_val_rewards) / len(e_val_rewards))
         val_total_profits.append(val_total_profit)
@@ -187,7 +190,10 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
 def evaluate(model: DQN, index: str, symbol: str, dataset: str,
              strategy: int = config["STRATEGY"], strategy_num: float = config["STRATEGY_NUM"],
-             use_strategy: bool = False, only_use_strategy: bool = False):
+             use_strategy: bool = False, only_use_strategy: bool = False,
+             path:str = config["STOCK_DATA_PATH"],
+             splits=config["INDEX_SPLITS"]
+             ):
 
     # TODO: Should strategy be None for training?
 
@@ -198,7 +204,7 @@ def evaluate(model: DQN, index: str, symbol: str, dataset: str,
     profits = []
     running_profits = [0]
     actions_taken = [0, 0, 0]
-    env = make_env(index=index, symbol=symbol, dataset=dataset)
+    env = make_env(index=index, symbol=symbol, dataset=dataset, path=path, splits=splits)
     env.start_episode()
 
     # Look at each time step in the evaluation data

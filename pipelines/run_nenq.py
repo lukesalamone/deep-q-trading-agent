@@ -1,7 +1,11 @@
 from pipelines.transfer_learning import gather_groups
-from pipelines.run_numq import train
+from pipelines.run_numq import train, evaluate
 from models.models import *
 from typing import List, Dict
+import yaml
+
+with open("config.yml", "r") as ymlfile:
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 def load_weights(model: DQN, IN_PATH):
     model.policy_net.load_state_dict(torch.load(IN_PATH))
@@ -22,9 +26,17 @@ def pretrain_on_group(profits: Dict, groups: Dict, index:str, method: str, group
                                                                           index=index,
                                                                           symbol=symbol,
                                                                           episodes=10,
-                                                                          dataset='train')
+                                                                          dataset='train',
+                                                                          path=config['STONK_PATH'],
+                                                                          splits=config['STONK_INDEX_SPLITS'])
 
-        # TODO EVALUATE MODEL HERE AND ADD PTOFIT TO PROFITS
+        rewards, profits, running_profits, total_profit = evaluate(model=model,
+                                                                   index=index,
+                                                                   symbol=symbol,
+                                                                   dataset='valid',
+                                                                   path=config['STONK_PATH'],
+                                                                   splits=config['STONK_INDEX_SPLITS'])
+
         current_weights = f'weights/numq/{index}/{method}/{group}/numq_{symbol}_{i+1}.pt'
         save_weights(model=model, OUT_PATH=current_weights)
 
