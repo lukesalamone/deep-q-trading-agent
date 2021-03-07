@@ -22,6 +22,7 @@ class FinanceEnvironment:
         self.end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
         self.lookback = config["LOOKBACK"]
+        self.reward_window = config["REWARD_WINDOW"]
 
         self.price_history = price_history
         self.date_column, self.price_column = self.price_history.columns
@@ -45,8 +46,8 @@ class FinanceEnvironment:
 
         # we create a pd.Series where at t, we have price - price_prev
         # backfill to avoid having a NaN in the first value. pad timesteps are p_0 - p_0 = 0
-        price_differences = self.price_history[self.price_column].diff(1).fillna(method='backfill')
-        self.price_differences = torch.from_numpy(price_differences.values)
+        price_deltas = self.price_history[self.price_column].diff(1).fillna(method='backfill')
+        self.price_deltas = torch.from_numpy(price_deltas.values)
 
     def start_episode(self, start_with_padding=True):
         self.episode_losses = []
@@ -59,12 +60,14 @@ class FinanceEnvironment:
 
     def step(self):
         # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-lookback
+        # look up price, prev price, init price in df at indices timestep, timestep-1, timestep-reward_window
         self.price = self.price_history[self.price_column].at[self.time_step]
         self.prev_price = self.price_history[self.price_column].at[self.time_step - 1]
-        self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
+        # self.init_price = self.price_history[self.price_column].at[self.time_step - self.lookback]
+        self.init_price = self.price_history[self.price_column].at[self.time_step - self.reward_window]
 
         # get the state as the day to day price differences from timestep-n to timestep
-        self.state = self.price_differences[self.time_step - self.lookback:self.time_step]
+        self.state = self.price_deltas[self.time_step - self.lookback:self.time_step]
 
         # check the date at index step.
         # If it's past the end date, we are at the end of the episode
@@ -74,7 +77,7 @@ class FinanceEnvironment:
             self.next_state = torch.Tensor([])
         else:
             # get the next state
-            self.next_state = self.price_differences[self.time_step - self.lookback + 1:self.time_step + 1]
+            self.next_state = self.price_deltas[self.time_step - self.lookback + 1:self.time_step + 1]
             assert self.next_state.size() == torch.Size([self.lookback])
 
         # increment timestep
@@ -120,18 +123,18 @@ class FinanceEnvironment:
 
         return profit, reward
 
-    def compute_reward_all_actions(self, action_index: int, num_t: List[float]):
+    def compute_reward_all_actions(self, action_index: int, num: float):
 
-        profit, reward = self.compute_profit_and_reward(action_index=action_index, num=num_t[action_index])
+        profit, reward = self.compute_profit_and_reward(action_index=action_index, num=num)
 
         rewards_all_actions = []
 
         for index, action in enumerate(self.action_space):
-            action_reward = _reward(num=num_t[index],
-                             action_value=action,
-                             price=self.price,
-                             prev_price=self.prev_price,
-                             init_price=self.init_price)
+            action_reward = _reward(num=num,
+                                    action_value=action,
+                                    price=self.price,
+                                    prev_price=self.prev_price,
+                                    init_price=self.init_price)
 
             rewards_all_actions.append(action_reward)
 
@@ -213,8 +216,8 @@ class ReplayMemory(object):
         self.memory.append(transition)
 
     def sample(self, batch_size: int):
-        return random.sample(self.memory, batch_size)
-        # return list(self.memory)[-batch_size:]
+        # return random.sample(self.memory, batch_size)
+        return list(self.memory)[-batch_size:]
 
     def __len__(self):
         return len(self.memory)

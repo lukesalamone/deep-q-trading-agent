@@ -19,7 +19,7 @@ with open("config.yml", "r") as ymlfile:
 
 # Select an action given model and state
 # Returns action index
-def select_action(model: DQN, state: Tensor, epsilon:int, t:int, strategy: int=config["STRATEGY"], strategy_num: float=config["STRATEGY_NUM"], use_strategy=False, only_use_strategy=False):
+def select_action(model: DQN, state: Tensor, epsilon:float, t:int, strategy: int=config["STRATEGY"], strategy_num: float=config["STRATEGY_NUM"], use_strategy=False, only_use_strategy=False):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -52,7 +52,7 @@ def select_action(model: DQN, state: Tensor, epsilon:int, t:int, strategy: int=c
     # If confidence is high enough, return the action of the highest q value
     return action_index, num
 
-def get_actions_and_num(model: DQN, state: Tensor):
+def get_actions_and_num(model: DQN, state: Tensor, epsilon: float):
     # Get q values for this state
     with torch.no_grad():
         q, num = model.policy_net(state)
@@ -60,7 +60,6 @@ def get_actions_and_num(model: DQN, state: Tensor):
     # Reduce unnecessary dimension
     q = q.squeeze().detach().numpy()
     num = num.squeeze().detach().numpy()
-    best_q_index = np.argmax(q)
 
     # Multiply num by trading limit to get actual share trade volume given model method
     if model.method == NUMDREG_ID:
@@ -68,7 +67,12 @@ def get_actions_and_num(model: DQN, state: Tensor):
     else:
         num = config["SHARE_TRADE_LIMIT"] * num
 
-    return best_q_index, list(q), list(num)
+    if random.random() < epsilon:
+        action_index = random.randint(0,  2)
+    else:
+        action_index = np.argmax(q)
+
+    return action_index, list(q), num[action_index]
 
 
 # Update policy net using a batch from memory
@@ -245,16 +249,17 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             
             # Get action index and num shares to trade
             # action_index, num = select_action(model=model, state=state, epsilon=epsilon, t=i, use_strategy=False)
-            action_index, q_action, num_t = get_actions_and_num(model=model, state=state)
+            action_index, q_action, num = get_actions_and_num(model=model, state=state, epsilon=epsilon)
             if optim_steps % 1000 == 0:
                 print(f"q action : {q_action}")
-                print(f"num t : {num_t}")
+                print(f"num t : {num}")
+                print(f"epsilon : {epsilon}")
 
             actions_taken[action_index] += 1
             # Compute profit, reward given action_index and num
             # env.compute_profit_and_reward(action_index=action_index, num=num)
             # compute all rewards
-            env.compute_reward_all_actions(action_index=action_index, num_t=num_t)
+            env.compute_reward_all_actions(action_index=action_index, num=num)
 
             # Update memory buffer to include observed transition
             env.update_replay_memory()
@@ -267,8 +272,9 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             optim_steps += 1
 
             # Soft TAU update
-            if optim_steps % config["STEPS_PER_SOFT_UPDATE"] == 0:
-                model.soft_update(tau=config["TAU"])
+            if config["UPDATE_TYPE"] == "SOFT":
+                if optim_steps % config["STEPS_PER_SOFT_UPDATE"] == 0:
+                    model.soft_update(tau=config["TAU"])
 
             # Break loop if at terminal state
             if done:
@@ -290,14 +296,13 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
         # Update epsilon
         # TODO like this or a decay factor?
-        epsilon = (1 - (e / episodes)) * config["EPSILON"]
+        if epsilon > config["MIN_EPSILON"]:
+            epsilon = (1 - (e / episodes)) * config["EPSILON"]
 
         # Update policy net with target net
-        if optim_steps % config["EPISODES_PER_TARGET_UPDATE"] == 0:
-            # TODO NEED A TAU?
-            # model.hard_update()
-            # model.soft_update(tau=config["TAU"])
-            pass
+        if config["UPDATE_TYPE"] == "HARD":
+            if optim_steps % config["EPISODES_PER_TARGET_UPDATE"] == 0:
+                model.hard_update()
 
 
         # Print episode training update
@@ -322,6 +327,7 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
     rewards = []
     profits = []
     running_profits = [0]
+    actions_taken = [0, 0, 0]
     env = make_env(index=index, symbol=symbol, dataset=dataset)
     env.start_episode()
 
@@ -333,6 +339,9 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         action_index, num = select_action(model=model, state=state, strategy=strategy, strategy_num=strategy_num, epsilon=0, 
                                                 use_strategy=use_strategy, only_use_strategy=only_use_strategy, t=i)
 
+        # log actions
+        actions_taken[action_index] += 1
+
         # Compute profit, reward given action_index and num
         profit, reward = env.compute_profit_and_reward(action_index=action_index, num=num)
 
@@ -341,7 +350,9 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
         rewards.append(reward)
         running_profits.append(env.episode_profit)
 
+        # Break loop if at terminal state
         if done:
+            print(f"actions taken : {actions_taken}")
             break
 
     total_profit = env.episode_profit

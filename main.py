@@ -45,6 +45,7 @@ def run_training(model:DQN, index: str, symbol:str, train_dataset:str, valid_dat
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model, index=index, symbol=symbol, dataset=train_dataset)
 
     # MKT on training
+    print('MKT BUY on Training')
     mkt_train_rewards, mkt_train_profits, mkt_train_running_profits, mkt_train_total_profits = evaluate(model,
                                                                       index=index,
                                                                       symbol=symbol,
@@ -54,11 +55,12 @@ def run_training(model:DQN, index: str, symbol:str, train_dataset:str, valid_dat
                                                                       only_use_strategy=True)
     
     # MKT on validation
+    print('MKT SELL on Eval Set')
     mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=valid_dataset,
-                                                                      strategy=2,
+                                                                      strategy=0,
                                                                       strategy_num=1.0,
                                                                       only_use_strategy=True)
 
