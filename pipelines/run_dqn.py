@@ -142,7 +142,6 @@ def optimize_numq(model, optimizer, state_batch, action_batch, reward_batch, nex
 
     # Loss is the difference between the q values from the policy net and expected q values from the target net
     loss = F.smooth_l1_loss(expected_q_batch, q_batch)
-
     # Clear gradients and update model parameters
     optimizer.zero_grad()
     loss.backward()
@@ -171,8 +170,14 @@ def new_optimize_numq(model, optimizer, state_batch, reward_batch, next_state_ba
     # for i in range(batch_size)
     # (64, 3) = (64, 3) + GAMMA * (64, 1) => (64, 3)
     expected_q_batch = reward_batch + (config["GAMMA"] * torch.unsqueeze(next_max_q_batch, dim=1))
+
     # Loss is the difference between the q values from the policy net and expected q values from the target net
-    loss = F.smooth_l1_loss(expected_q_batch, q_batch)
+    if config["LOSS"] == "SMOOTH_L1_LOSS":
+        loss = F.smooth_l1_loss(expected_q_batch, q_batch)
+    elif config["LOSS"] == "MSE_LOSS":
+        loss = F.mse_loss(expected_q_batch, q_batch)
+    else:
+        loss = F.smooth_l1_loss(expected_q_batch, q_batch)
 
     # Clear gradients and update model parameters
     optimizer.zero_grad()

@@ -12,6 +12,15 @@ INDEX_SPLITS: {
     "test": ["2006-08-11", "2017-12-29"]
   }
 }
+
+STONKS_SPLITS: {
+  "train": ["2004-11-02", ""],
+  "valid": ["", ""],
+  "full_train": ["2004-11-02", ""],
+  "test": ["", "2020-06-12"]
+}
+
+
 LOOKBACK: 200
 REWARD_WINDOW: 100
 
@@ -22,9 +31,10 @@ STRATEGY_NUM: 10
 THRESHOLD: 0.2
 
 # Training
-EPSILON: 0.2
+EPSILON: 0
 MIN_EPSILON: 0.05
-EPISODES: 10
+EPISODES: 20
+LOSS: "SMOOTH_L1_LOSS"
 LR: 0.0001
 LR_NUMDREGAD: 0.0000001
 LR_NUMDREGID: 0.00001
