@@ -93,12 +93,8 @@ def optimize_model(model: DQN, optimizer, memory: ReplayMemory):
 
     # Optimize model given specified method
     if model.method == NUMQ:
-        """
-        
-        loss = optimize_numq(model=model, optimizer=optimizer, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch,
-                             next_state_batch=next_state_batch)
-        """
-        loss = new_optimize_numq(model=model, optimizer=optimizer, state_batch=state_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+        # loss = optimize_numq(model=model, optimizer=optimizer, state_batch=state_batch, action_batch=action_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
+        loss = optimize_numq_all_actions(model=model, optimizer=optimizer, state_batch=state_batch, reward_batch=reward_batch, next_state_batch=next_state_batch)
         return (loss,)
     
     # TODO - a bunch of stuff here and use passed in optimizer
@@ -150,7 +146,7 @@ def optimize_numq(model, optimizer, state_batch, action_batch, reward_batch, nex
     # Return loss value
     return loss.item()
 
-def new_optimize_numq(model, optimizer, state_batch, reward_batch, next_state_batch):
+def optimize_numq_all_actions(model, optimizer, state_batch, reward_batch, next_state_batch):
     # Get q values from policy net (track gradients only for policy net)
     q_batch, num_batch = model.policy_net(state_batch)
     # (64, 3), (64, 3)
@@ -255,10 +251,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
             # Get action index and num shares to trade
             # action_index, num = select_action(model=model, state=state, epsilon=epsilon, t=i, use_strategy=False)
             action_index, q_action, num = get_actions_and_num(model=model, state=state, epsilon=epsilon)
-            if optim_steps % 1000 == 0:
-                print(f"q action : {q_action}")
-                print(f"num t : {num}")
-                print(f"epsilon : {epsilon}")
 
             actions_taken[action_index] += 1
             # Compute profit, reward given action_index and num
@@ -283,7 +275,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
 
             # Break loop if at terminal state
             if done:
-                print(f"actions taken : {actions_taken}")
                 break
 
         # Update training performance metrics
@@ -300,7 +291,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
         val_total_profits.append(val_total_profit)
 
         # Update epsilon
-        # TODO like this or a decay factor?
         if epsilon > config["MIN_EPSILON"]:
             epsilon = (1 - (e / episodes)) * config["EPSILON"]
 
@@ -357,9 +347,13 @@ def evaluate(model: DQN, index:str, symbol:str, dataset: str, strategy: int = co
 
         # Break loop if at terminal state
         if done:
-            print(f"actions taken : {actions_taken}")
             break
 
+    # Compute total profit
     total_profit = env.episode_profit
+
+    # Print action proportions
+    print("Actions taken : {}\n".format(actions_taken))
+
     # Return list of profits, running total profits, and total profit
     return rewards, profits, running_profits, total_profit

@@ -132,3 +132,5 @@ dmypy.json
 .DS_STORE
 
 final_project_data/
+plots/
+weights/
