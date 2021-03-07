@@ -4,7 +4,6 @@ from torch import optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from models.models import Net
-from utils.transfer_data import init_dataset
 
 def compute_correlation(X: np.array, Y: np.array) -> float:
     return np.corrcoef(x=X, y=Y)
