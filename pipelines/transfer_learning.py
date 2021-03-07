@@ -1,12 +1,7 @@
-from typing import Tuple
-import numpy as np
 from torch import optim
 from torch.nn import functional as F
-from torch.utils.data import DataLoader
 from models.models import StonksNet
-from utils.transfer_data import init_dataset
 import torch
-import pandas as pd
 
 from utils.load_file import *
 
@@ -111,15 +106,4 @@ def mininet_pipeline():
     return model
 
 if __name__ == '__main__':
-    # train_mininet(5)
-
-
-    # mininet_pipeline()
-
     correlation_pipeline()
-
-    # index = 'gspc'
-    # component_names = index_component_names(index)
-    # prices = np.array([component_prices(index, symbol) for symbol in component_names])
-    # lengths = list(map(lambda x: len(x), prices))
-    # print(lengths)

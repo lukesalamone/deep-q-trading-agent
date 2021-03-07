@@ -1,3 +1,4 @@
+import os
 from collections import deque
 from typing import Tuple
 import numpy as np
@@ -7,8 +8,6 @@ import random
 import datetime
 import pandas as pd
 import yaml
-
-from .build_batches import load_prices
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
@@ -215,3 +214,14 @@ def make_env(index: str, symbol: str, dataset:str):
     """
     prices = load_prices(index=index, symbol=symbol)
     return FinanceEnvironment(price_history=prices, index=index, dataset=dataset)
+
+
+def load_prices(index: str, symbol: str):
+    path = config["STOCK_DATA_PATH"]
+    file = f"{index}/{symbol}.csv"
+    df = pd.read_csv(os.path.join(path, file))
+    # first, second columns to datetime, float64
+    df[df.columns[0]] = pd.to_datetime(df[df.columns[0]])
+    df[df.columns[1]] = df[df.columns[1]].astype('float64')
+
+    return df
