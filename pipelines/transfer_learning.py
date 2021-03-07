@@ -5,9 +5,6 @@ import torch
 
 from utils.load_file import *
 
-def compute_correlation(x: np.array, y: np.array) -> float:
-    return np.corrcoef(x, y)[0,1]
-
 def fake_prices(size, num_samples):
     return [torch.rand(size) for _ in range(num_samples)]
 
@@ -105,5 +102,36 @@ def mininet_pipeline():
 
     return model
 
+def gather_groups():
+    group_sizes = {'djia':4, 'gspc':6, 'nasdaq':6, 'nyse':8}
+    groups = {}
+
+
+    for index in group_sizes:
+        size = group_sizes[index]
+        hs = int(size/2)
+        group = {'correlation': {}, 'mse': {}}
+        correlations = load_relationship_info('correlation', index)
+        correlations = correlations.sort_values(by=['correlation'], ascending=False).to_numpy()
+        correlations = list(map(lambda x: x[1], correlations))
+
+        # high correlation, low correlation, half high + half low
+        group['correlation']['high'] = correlations[0:size]
+        group['correlation']['low'] = correlations[-size:]
+        group['correlation']['highlow'] = correlations[-hs:] + correlations[0:hs]
+
+        mse = load_relationship_info('stonksnet', index)
+        mse = mse.sort_values(by=['MSE'], ascending=False).to_numpy()
+        mse = list(map(lambda x: x[1], mse))
+
+        group['mse']['high'] = mse[0:size]
+        group['mse']['low'] = mse[-size:]
+        group['mse']['highlow'] = mse[-hs:] + mse[0:hs]
+
+        groups[index] = group
+
+    return groups
+
+
 if __name__ == '__main__':
-    correlation_pipeline()
+    gather_groups()
