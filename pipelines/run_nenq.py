@@ -39,7 +39,7 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
         model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                           index=index,
                                                                           symbol=symbol,
-                                                                          episodes=10,
+                                                                          episodes=config["EPISODES_COMPONENT_STOCKS"],
                                                                           dataset='train',
                                                                           path=config['STONK_PATH'],
                                                                           splits=config['STONK_INDEX_SPLITS'])
@@ -48,10 +48,11 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
 
         eval_rewards, eval_profits, eval_running_profits, eval_total_profits = evaluate(model=model,
                                                                                        index=index,
-                                                                                       symbol=symbol,
+                                                                                       symbol=config["SYMBOLS_DICT"][index],
                                                                                        dataset='valid',
                                                                                        path=config['STONK_PATH'],
                                                                                        splits=config['STONK_INDEX_SPLITS'])
+
 
         current_weights = f'weights/numq/{index}/{method}/{group}/numq_{i+1}.pt'
         experiment_log[symbol] = {
@@ -70,11 +71,25 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
             },
             'weights': current_weights
         }
-        experiment_log["total profits"] += eval_total_profits
+        # experiment_log["total profits"] += eval_total_profits
         # plots_path = f'plots/numq/{index}/{method}/{group}/numq_{symbol}_{i+1}.pt'
 
         # print(f"Saving weights for {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
         save_weights(model=model, OUT_PATH=current_weights)
+
+    eval_rewards, eval_profits, eval_running_profits, eval_total_profits = evaluate(model=model,
+                                                                                    index=index,
+                                                                                    symbol=config["SYMBOLS_DICT"][index],
+                                                                                    dataset='valid',
+                                                                                    path=config['STONK_PATH'],
+                                                                                    splits=config['STONK_INDEX_SPLITS'])
+    experiment_log["eval"] = {
+        'rewards': eval_rewards,
+        'profits': eval_profits,
+        'running profits': eval_running_profits,
+        'total profits': eval_total_profits
+    }
+    experiment_log["total profits"] = eval_total_profits
 
     pretrained_weights = f'weights/numq/{index}/{method}/{group}/numq_pretrain.pt'
 
@@ -129,7 +144,7 @@ def run_nenq_on_index(index, symbol, train_set='train', eval_set='valid',
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                       index=index,
                                                                       symbol=symbol,
-                                                                      episodes=10,
+                                                                      episodes=config["EPISODES"],
                                                                       dataset=train_set,
                                                                       path=path,
                                                                       splits=splits)
@@ -227,11 +242,13 @@ def plot_profits_eval(running_profits, total_profits, mkt_total_profits, mkt_run
     plt.title("Eval Profits")
     plt.legend()
     plt.savefig(f"plots/{path}/evaluation.png")
+    plt.close()
 
 def plot_losses(losses, path):
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
     plt.savefig(f"plots/{path}/losses.png")
+    plt.close()
 
 def plot_rewards(rewards, val_rewards, path):
     plt.plot(list(range(len(rewards))), rewards, label="Training", color="lightblue")
@@ -239,6 +256,7 @@ def plot_rewards(rewards, val_rewards, path):
     plt.title("Rewards")
     plt.legend()
     plt.savefig(f"plots/{path}/rewards.png")
+    plt.close()
 
 def plot_profits_train(profits, val_profits, mkt_train_total_profits, mkt_valid_total_profits, path):
     plt.plot(list(range(len(profits))), profits, label="Training", color="lightblue")
@@ -250,6 +268,7 @@ def plot_profits_train(profits, val_profits, mkt_train_total_profits, mkt_valid_
     plt.title("Total Profits")
     plt.legend()
     plt.savefig(f"plots/{path}/profits.png")
+    plt.close()
 
 if __name__=='__main__':
     run_nenq_on_index(index='gspc', symbol='^GSPC', train_set='train', eval_set='valid',

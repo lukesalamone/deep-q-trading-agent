@@ -14,6 +14,12 @@ INDEX_SPLITS: {
     "test": ["2006-08-11", "2017-12-29"]
   }
 }
+SYMBOLS_DICT: {
+  'gspc': '^GSPC',
+  'djia': '^DJI',
+  'nasdaq': '^IXIC',
+  'nyse': '^NYA'
+}
 STONK_INDEX_SPLITS: {
   "gspc": {
     "train": [ "2004-11-02", "2012-08-17" ],
@@ -61,6 +67,7 @@ THRESHOLD: 0.2
 EPSILON: 0
 MIN_EPSILON: 0.05
 EPISODES: 10
+EPISODES_COMPONENT_STOCKS: 3
 LOSS: "SMOOTH_L1_LOSS"
 LR: 0.0001
 LR_NUMDREGAD: 0.0000001
