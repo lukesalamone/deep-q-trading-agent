@@ -26,15 +26,20 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
         'index': index,
         'method': method,
         'group': group,
+        'episodes on components': config["EPISODES_COMPONENT_STOCKS"],
+        'episodes on index': config["EPISODES_PRETRAIN_EVAL"],
         'total profits': 0
     }
     model = DQN(NUMQ)
+    component_stocks = len(groups[index][method][group])
     for i, symbol in enumerate(groups[index][method][group]):
         if i > 0:
             previous_weights = f'weights/numq/{index}/{method}/{group}/numq_{i}.pt'
-            print(f"Loading weights for {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
+            # print(f"Loading weights for {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
             model = load_weights(model=model, IN_PATH=previous_weights)
 
+        print(f" ----- START TRAINING ---- ")
+        print(f"group:{group}, method: {method}, progress: {i}/{component_stocks} ...")
         # print(f"Start Train on group: {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
         model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                           index=index,
@@ -44,17 +49,21 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
                                                                           path=config['STONK_PATH'],
                                                                           splits=config['STONK_INDEX_SPLITS'])
 
-        print(f"Start Eval on group: {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
+        print(f" ----- END TRAINING ---- ")
 
+        # print(f"Start Eval on group: {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
+        # print(f" ----- START EVAL ---- ")
+        # print(f"group:{group}, method: {method}, progress: {i}/{component_stocks} ...")
+        # EVAL component
         eval_rewards, eval_profits, eval_running_profits, eval_total_profits = evaluate(model=model,
                                                                                        index=index,
-                                                                                       symbol=config["SYMBOLS_DICT"][index],
+                                                                                       symbol=symbol,
                                                                                        dataset='valid',
                                                                                        path=config['STONK_PATH'],
                                                                                        splits=config['STONK_INDEX_SPLITS'])
 
-
-        current_weights = f'weights/numq/{index}/{method}/{group}/numq_{i+1}.pt'
+        # print(f" ----- END EVAL ---- ")
+        # current_weights = f'weights/numq/{index}/{method}/{group}/numq_{i+1}.pt'
         experiment_log[symbol] = {
             'train': {
                 'losses': losses,
@@ -63,41 +72,75 @@ def pretrain_on_group(groups: Dict, index:str, method: str, group:str):
                 'profits': profits,
                 'val profits': val_profits
             },
-            'eval': {
+            'component_eval': {
                 'rewards': eval_rewards,
                 'profits': eval_profits,
                 'running profits': eval_running_profits,
                 'total profits': eval_total_profits
-            },
-            'weights': current_weights
+            } # 'weights': current_weights
         }
-        # experiment_log["total profits"] += eval_total_profits
-        # plots_path = f'plots/numq/{index}/{method}/{group}/numq_{symbol}_{i+1}.pt'
+        # save_weights(model=model, OUT_PATH=current_weights)
 
-        # print(f"Saving weights for {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
-        save_weights(model=model, OUT_PATH=current_weights)
-
-    eval_rewards, eval_profits, eval_running_profits, eval_total_profits = evaluate(model=model,
-                                                                                    index=index,
-                                                                                    symbol=config["SYMBOLS_DICT"][index],
-                                                                                    dataset='valid',
-                                                                                    path=config['STONK_PATH'],
-                                                                                    splits=config['STONK_INDEX_SPLITS'])
-    experiment_log["eval"] = {
-        'rewards': eval_rewards,
-        'profits': eval_profits,
-        'running profits': eval_running_profits,
-        'total profits': eval_total_profits
-    }
-    experiment_log["total profits"] = eval_total_profits
+    # print(f"Start Train on group: {group}, index: {index}, method: {method}, symbol: {symbol} ... ")
 
     pretrained_weights = f'weights/numq/{index}/{method}/{group}/numq_pretrain.pt'
-
     save_weights(model=model, OUT_PATH=pretrained_weights)
     experiment_log["pretrained weights"] = pretrained_weights
 
-    print(f"Logging Experiment for group: {group}, index: {index}, method: {method} ... ")
+    print(f" ----- START PRETRAIN ON INDEX ---- ")
+    print(f"group:{group}, method: {method} ...")
 
+    model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
+                                                                      index=index,
+                                                                      symbol=config["SYMBOLS_DICT"][index],
+                                                                      episodes=config["EPISODES_PRETRAIN_EVAL"],
+                                                                      dataset='train',
+                                                                      path=config['STONK_PATH'],
+                                                                      splits=config['STONK_INDEX_SPLITS'])
+
+    print(f" ----- END PRETRAIN ON INDEX ---- ")
+
+    print(f" ----- START EVAL OF PRETRAIN ON INDEX---- ")
+
+    idx_eval_rewards, idx_eval_profits, idx_eval_running_profits, idx_eval_total_profits = evaluate(model=model,
+                                                                                                    index=index,
+                                                                                                    symbol=config["SYMBOLS_DICT"][index],
+                                                                                                    dataset='valid',
+                                                                                                    path=config['STONK_PATH'],
+                                                                                                    splits=config['STONK_INDEX_SPLITS'])
+
+    print(f" ----- START EVAL MKT BUY ON INDEX---- ")
+    mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
+                                                                                                        index=index,
+                                                                                                        symbol=config["SYMBOLS_DICT"][index],
+                                                                                                        dataset='valid',
+                                                                                                        strategy=0,
+                                                                                                        strategy_num=1.0,
+                                                                                                        only_use_strategy=True,
+                                                                                                        path=config['STONK_PATH'],
+                                                                                                        splits=config['STONK_INDEX_SPLITS'])
+
+    experiment_log["eval index"] = {
+        'model': {
+            'rewards': idx_eval_rewards,
+            'profits': idx_eval_profits,
+            'running profits': idx_eval_running_profits,
+            'total profits': idx_eval_total_profits
+        },
+        'mkt': {
+            'mkt_total_profits': mkt_valid_total_profits,
+            'mkt_valid_rewards': mkt_valid_rewards,
+            'mkt_valid_profits': mkt_valid_profits,
+            'mkt_valid_running_profits': mkt_valid_running_profits
+        }
+    }
+
+    experiment_log["total profits"] = idx_eval_total_profits
+    print(f" ----- END EVAL FOR PRETRAIN ON INDEX---- ")
+    print(f"group: {group}, method: {method}, index: {index}")
+    print(f" --- TOTAL MODEL PROFITS: {idx_eval_total_profits}")
+    print(f" --- TOTAL MKT PROFITS: {mkt_valid_total_profits}")
+    print(f"Logging Experiment for group: {group}, index: {index}, method: {method} ... ")
     log_experiment(experiment=experiment_log, filename=f"{index}.{method}.{group}")
 
     return experiment_log
