@@ -112,7 +112,7 @@ def run_experiment(**kwargs):
 if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
-        'method': NUMQ,
+        'method': NUMDREG_ID,
         'index': 'gspc',
         'symbol': '^GSPC',
         'train_model': True,

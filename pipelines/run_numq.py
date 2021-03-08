@@ -29,9 +29,17 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"],
     q = q.squeeze().detach().numpy()
     num = num.squeeze().detach().numpy()
 
+    # Select action and num
     selected_action_index = np.argmax(q)
-    selected_num = num[selected_action_index]
-    selected_num = config["SHARE_TRADE_LIMIT"] * selected_num
+    if model.method == NUMDREG_ID:
+        if model.mode == ACT_MODE:
+            num = list(num)
+            selected_num = config["SHARE_TRADE_LIMIT"] * num[0]
+        else:
+            selected_num = config["SHARE_TRADE_LIMIT"] * num
+    else:
+        num = list(num)
+        selected_num = config["SHARE_TRADE_LIMIT"] * num[selected_action_index]
 
     # Use predefined confidence if confidence is too low, indicating a confused market
     confidence = (np.abs(q[model.BUY] - q[model.SELL]) / np.sum(q))
@@ -42,7 +50,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"],
         selected_action_index = strategy
 
     # Return q and num as well as selected action and num
-    return list(q), selected_action_index, list(num), selected_num
+    return list(q), selected_action_index, num, selected_num
 
 
 # Get batches from replay memory
@@ -58,13 +66,8 @@ def get_batches(memory: ReplayMemory):
 
     return state_batch, action_batch, reward_batch, next_state_batch
 
-# TODO - check for type of training - num vs action in the case of numdreg
 # Update policy net using a batch from memory
 def optimize_model(model: DQN(NUMQ), optimizer, memory: ReplayMemory, optim_actions:bool=True):
-    # Skip if memory length is not at least batch size
-    if len(memory) < config["BATCH_SIZE"]:
-        return None
-
     # Get transition batches
     state_batch, action_batch, reward_batch, next_state_batch = get_batches(memory)
     
@@ -149,10 +152,27 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
             # Update memory buffer to include observed transition
             env.update_replay_memory()
 
+            # Go to next step if memory not large enough yet
+            if len(env.replay_memory) < config["BATCH_SIZE"]:
+                continue
+
             # Update model and increment optimization steps based on model method
-            if (model.method == NUMDREG_AD or model.method == NUMDREG_ID) and model.mode == model.FULL_MODE:
-                act_loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory)
-                num_loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory)
+            if model.method == NUMDREG_AD or model.method == NUMDREG_ID:
+                if model.mode == ACT_MODE:
+                    # Optimize actions
+                    loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory, optim_actions=True)
+                
+                elif model.mode == NUM_MODE:
+                    # Optimize num
+                    loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory, optim_actions=False)
+
+                elif model.mode == FULL_MODE:
+                    # Optimize both num and actions
+                    act_loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory, optim_actions=True)
+                    num_loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory, optim_actions=False)
+
+                    # Add rewards
+                    loss = act_loss + num_loss
             else:
                 loss = optimize_model(model=model, optimizer=optimizer, memory=env.replay_memory)
             
@@ -209,18 +229,21 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int = con
             print("Training NumDReg-ID...")
 
         # Train action branch
-        model.set_mode(model.ACT_MODE)
+        model.set_mode(ACT_MODE)
+        print("Training Action Branch...")
         act_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
 
         # Train num branch
-        model.set_mode(model.NUM_MODE)
+        model.set_mode(NUM_MODE)
+        print("Training Number Branch...")
         num_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
 
         # Train both branches
-        #model.set_mode(model.FULL_MODE)
-        #full_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
+        model.set_mode(FULL_MODE)
+        print("Training Full...")
+        full_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
 
-        return (act_trained, num_trained, full_trained)
+        return full_trained
     
     print("Invalid model method")
     return
