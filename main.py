@@ -45,7 +45,8 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
     plt.plot(list(range(len(running_profits))), running_profits, label="Trading Agent", color="blue")
     plt.plot(list(range(len(mkt_running_profits))), mkt_running_profits, label="MKT", color="black")
     plt.legend()
-    plt.savefig("plots/evaluation.png")
+    # plt.savefig("plots/evaluation.png")
+    plt.savefig(f"plots/{index}_ep_{config['EPISODES']}_evaluation.png")
     plt.title("Eval Profits")
     plt.show()
 
@@ -89,13 +90,15 @@ def run_training(model: DQN, index: str, symbol: str,
 
     plt.plot(list(range(len(losses))), losses)
     plt.title("Losses")
-    plt.savefig("plots/losses.png")
+    plt.savefig(f"plots/{index}_ep_{config['EPISODES']}_losses.png")
+    # plt.savefig("plots/losses.png")
     plt.show()
 
     plt.plot(list(range(len(rewards))), rewards, label="Training", color="lightblue")
     plt.plot(list(range(len(val_rewards))), val_rewards, label="Validation", color="blue")
     plt.title("Rewards")
-    plt.savefig("plots/rewards.png")
+    plt.savefig(f"plots/{index}_ep_{config['EPISODES']}_rewards.png")
+    # plt.savefig("plots/rewards.png")
     plt.legend()
     plt.show()
 
@@ -106,7 +109,7 @@ def run_training(model: DQN, index: str, symbol: str,
     plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid",
              color="black")
     plt.title("Total Profits")
-    plt.savefig("plots/profits.png")
+    plt.savefig(f"plots/{index}_ep_{config['EPISODES']}_profits.png")
     plt.legend()
     plt.show()
     return model
@@ -159,6 +162,4 @@ if __name__ == '__main__':
         'use strategy': False
     }
 
-    # run_experiment(**experiment_args)
-    run_nenq_on_index(index='djia', symbol='^DJI', train_set='train', eval_set='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
+    run_experiment(**experiment_args)
