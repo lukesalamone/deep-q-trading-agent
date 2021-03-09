@@ -146,8 +146,8 @@ if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
         'method': NUMQ,
-        'index': 'nasdaq',
-        'symbol': '^IXIC',
+        'index': 'nyse',
+        'symbol': '^NYA',
         'train_model': True,
         'eval_model': True,
         'train_set': 'train',
