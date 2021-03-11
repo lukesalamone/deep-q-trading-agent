@@ -178,7 +178,13 @@ Creating these groups allows our models to be pretrained on stocks which are pro
 
 # Autoencoding component stocks
 
-Todo
+In order to calculate the mean squared error of the component stocks, we need to train an autoencoder which will predict a series of stock prices for each component in an index. That is, the input size of the network will be MxN, where M is the number of components in the index and N is the number of days in the time series.
+
+We will train an autoencoder such that X=Y, where X is the input and Y is the output. The architecture of the autoencoder is very simple, having only 2 hidden layers with 5 units each. These small hidden layers force the model to encode the most essential information of its inputs into a small latent space. All extraneous information not represented in the latent space is discarded. Each of the inputs x<sub>i</sub> will be encoder with the autoencoder as y<sub>i</sub>, and it is against these that mean squared error is measured.
+
+![autoencoder](src/img/autoencoder.png)
+
+Training an autoencoder is fairly simple if you understand the basics of neural networks. Rather than training with (input, target) pairs, since we only care that input=input, we will train on (input, input) pairs.
 
 # Transfer learning
 
