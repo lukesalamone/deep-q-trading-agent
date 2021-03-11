@@ -168,6 +168,8 @@ But first we need to choose which components to pretrain with. Training with all
 
 | Correlation          | MSE                  |
 | -------------------- | -------------------- |
+| Highest 2n           | Highest 2n           |
+| Lowest 2n            | Lowest 2n            |
 | Highest n + Lowest n | Highest n + Lowest n |
 
 So for each stock we will measure its correlation with the index and measure its autoencoder MSE. One group of stocks will be made up of the highest `2n` components when measured by correlation with the index. (Here `n` is chosen in proportion to the number of components in the index.) Another group will be made up of the `2n` stocks which have the lowest correlation with the index. And so forth.
