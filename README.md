@@ -162,7 +162,17 @@ Todo
 
 # Component stock relationships
 
-Todo
+Because of their large number of weights, deep neural networks have the tendency to overfit their training data if there isn't enough of it. To counteract this behavior, we reduced the number of weights and changed the training process into a 3-step procedure. One other thing which can help to prevent overfitting is to train with more data. This is why we pretrain using component stocks and finish training on the index stock.
+
+But first we need to choose which components to pretrain with. Training with all of them will be too time-consuming. Instead, we will create 6 groups of stocks based on 2 different measures of the components: [Pearson correlation](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) and the mean squared predicting error from an autoencoder. We will measure each component stock and choose 6 groups according to the following:
+
+| Correlation          | MSE                  |
+| -------------------- | -------------------- |
+| Highest n + Lowest n | Highest n + Lowest n |
+
+So for each stock we will measure its correlation with the index and measure its autoencoder MSE. One group of stocks will be made up of the highest `2n` components when measured by correlation with the index. (Here `n` is chosen in proportion to the number of components in the index.) Another group will be made up of the `2n` stocks which have the lowest correlation with the index. And so forth.
+
+Creating these groups allows our models to be pretrained on stocks which are proxies to the index, or in the case of the "low" group, on stocks which might help the agent generalize later on.
 
 # Autoencoding component stocks
 
