@@ -1,9 +1,6 @@
 import numpy as np
-import torch
-import random
-import torch.nn as nn
+
 import torch.nn.functional as F
-from torch.optim import Adam
 from torch import optim, Tensor
 import yaml
 from itertools import count
@@ -107,13 +104,14 @@ def optimize_model(model: DQN(NUMQ), optimizer, memory: ReplayMemory, optim_acti
     return loss.item()
 
 # Train model on given training data
-def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"]):
+def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: int = config["EPISODES"], 
+                   strategy: int = config["STRATEGY"], use_strategy: bool=config["USE_STRATEGY_TRAIN"], path: str=config["STOCK_DATA_PATH"], 
+                   splits=config["INDEX_SPLITS"]):
 
     print(f"Training model on {symbol} from {index} with {dataset} for {episodes} episodes...")
 
     optim_steps = 0
-    epsilon = config["EPSILON"]
-
+    
     # Track losses rewards and profits
     losses = []
     rewards = []
@@ -125,7 +123,7 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
     optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
 
     # initialize env
-    env = make_env(index=index, symbol=symbol, dataset=dataset)
+    env = make_env(index=index, symbol=symbol, dataset=dataset, path=path, splits=splits)
 
     # Run for the defined number of episodes
     for e in range(episodes):
@@ -196,7 +194,7 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
         total_profits.append(e_profit)
 
         # Update validation performance metrics
-        e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol, dataset='valid')
+        e_val_rewards, _, _, val_total_profit = evaluate(model, index=index, symbol=symbol, dataset='valid', path=path, splits=splits)
         val_rewards.append(sum(e_val_rewards) / len(e_val_rewards))
         val_total_profits.append(val_total_profit)
 
@@ -250,9 +248,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int = con
 
 # Evaluate model on validation or test set and return list of profits and total profits
 # NOTE only use strategy is if we want to compare against a baseline (buy and hold)
-def evaluate(model: DQN, index: str, symbol: str, dataset: str,
-             strategy: int = config["STRATEGY"], strategy_num: float = config["STRATEGY_NUM"],
-             use_strategy: bool = False, only_use_strategy: bool = False):
+def evaluate(model: DQN, index: str, symbol: str, dataset: str, strategy: int=config["STRATEGY"], strategy_num: float=config["STRATEGY_NUM"],
+             use_strategy: bool=False, only_use_strategy: bool = False, path: str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
 
     print(f"Evaluating model on {symbol} from {index} with {dataset}...")
 
@@ -263,7 +260,7 @@ def evaluate(model: DQN, index: str, symbol: str, dataset: str,
     actions_taken = [0, 0, 0]
 
     # initialize env
-    env = make_env(index=index, symbol=symbol, dataset=dataset)
+    env = make_env(index=index, symbol=symbol, dataset=dataset, path=path, splits=splits)
     env.start_episode()
 
     # Look at each time step in the evaluation data
@@ -271,7 +268,10 @@ def evaluate(model: DQN, index: str, symbol: str, dataset: str,
         state, done = env.step()
 
         # Select action
-        q_values, selected_action_index, num_values, selected_num = select_action(model=model, state=state, strategy=strategy, strategy_num=strategy_num, use_strategy=use_strategy, only_use_strategy=only_use_strategy)
+        q_values, selected_action_index, num_values, selected_num = select_action(model=model, state=state, 
+                                                                                  strategy=strategy, strategy_num=strategy_num, 
+                                                                                  use_strategy=use_strategy, 
+                                                                                  only_use_strategy=only_use_strategy)
 
         # log actions
         actions_taken[selected_action_index] += 1

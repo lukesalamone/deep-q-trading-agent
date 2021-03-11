@@ -14,9 +14,9 @@ with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 class FinanceEnvironment:
-    def __init__(self, price_history: pd.DataFrame, index: str, dataset:str):
+    def __init__(self, price_history: pd.DataFrame, index: str, dataset:str, splits=config["INDEX_SPLITS"]):
 
-        start_date, end_date = config["INDEX_SPLITS"][index][dataset]
+        start_date, end_date = splits[index][dataset]
         self.start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
         self.end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
 
@@ -205,19 +205,20 @@ class ReplayMemory(object):
         return len(self.memory)
 
 
-def make_env(index: str, symbol: str, dataset:str):
+def make_env(index: str, symbol: str, dataset:str,
+             path:str=config["STOCK_DATA_PATH"],
+             splits=config["INDEX_SPLITS"]):
     """
     :param index: stock index, eg. gspc, hsi, etc.
     :param symbol: Ticker, eg. '^GSPC', 'APX'
     :param dataset: 'train', 'valid', 'test'
     :return:
     """
-    prices = load_prices(index=index, symbol=symbol)
-    return FinanceEnvironment(price_history=prices, index=index, dataset=dataset)
+    prices = load_prices(index=index, symbol=symbol, path=path)
+    return FinanceEnvironment(price_history=prices, index=index, dataset=dataset, splits=splits)
 
 
-def load_prices(index: str, symbol: str):
-    path = config["STOCK_DATA_PATH"]
+def load_prices(index: str, symbol: str, path: str=config["STOCK_DATA_PATH"]):
     file = f"{index}/{symbol}.csv"
     df = pd.read_csv(os.path.join(path, file))
     # first, second columns to datetime, float64
