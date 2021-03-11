@@ -2,6 +2,7 @@
 RAW_DATA_PATH: 'data'
 CLEAN_DATA_PATH: 'data_clean'
 STOCK_DATA_PATH: 'stock_data'
+EXPERIMENT_LOGS_PATH: 'experiment_logs'
 STONK_PATH: 'stonks'
 ALLOWED_DATASETS: ['gspc', 'hsi', 'ks11', 'sx5e']
 INDEX_SYMBOLS: { '^GSPC', '^HSI', '^KOSPI' }
@@ -11,6 +12,38 @@ INDEX_SPLITS: {
     "valid": ["2002-11-05", "2006-08-10"],
     "full_train": ["1987-01-02", "2006-08-10"],
     "test": ["2006-08-11", "2017-12-29"]
+  }
+}
+SYMBOLS_DICT: {
+  'gspc': '^GSPC',
+  'djia': '^DJI',
+  'nasdaq': '^IXIC',
+  'nyse': '^NYA'
+}
+STONK_INDEX_SPLITS: {
+  "gspc": {
+    "train": [ "2004-11-02", "2012-08-17" ],
+    "valid": [ "2012-08-20", "2015-03-30" ],
+    "full_train": [ "2004-11-02", "2015-03-30" ],
+    "test": [ "2015-03-31", "2020-06-12" ]
+  },
+  "nasdaq": {
+    "train": [ "2004-11-02", "2012-08-17" ],
+    "valid": [ "2012-08-20", "2015-03-30" ],
+    "full_train": [ "2004-11-02", "2015-03-30" ],
+    "test": [ "2015-03-31", "2020-06-12" ]
+  },
+  "nyse": {
+    "train": [ "2004-11-02", "2012-08-17" ],
+    "valid": [ "2012-08-20", "2015-03-30" ],
+    "full_train": [ "2004-11-02", "2015-03-30" ],
+    "test": [ "2015-03-31", "2020-06-12" ]
+  },
+  "djia": {
+    "train": [ "2004-11-02", "2012-08-17" ],
+    "valid": [ "2012-08-20", "2015-03-30" ],
+    "full_train": [ "2004-11-02", "2015-03-30" ],
+    "test": [ "2015-03-31", "2020-06-12" ]
   }
 }
 
@@ -26,13 +59,16 @@ REWARD_WINDOW: 100
 # Model
 SHARE_TRADE_LIMIT: 10
 STRATEGY: 1
+USE_STRATEGY_TRAIN: False
 STRATEGY_NUM: 1.0
 THRESHOLD: 0.2
 
 # Training
 EPSILON: 0
 MIN_EPSILON: 0.05
-EPISODES: 10
+EPISODES: 1
+EPISODES_COMPONENT_STOCKS: 1
+EPISODES_PRETRAIN_EVAL: 1
 LOSS: "SMOOTH_L1_LOSS"
 LR: 0.0001
 LR_NUMDREGAD: 0.0000001

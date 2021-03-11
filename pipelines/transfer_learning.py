@@ -2,6 +2,7 @@ from torch import optim
 from torch.nn import functional as F
 from models.models import StonksNet
 import torch
+import numpy as np
 
 from utils.load_file import *
 
@@ -134,4 +135,5 @@ def gather_groups():
 
 
 if __name__ == '__main__':
-    gather_groups()
+    groups = gather_groups()
+    print(groups)
