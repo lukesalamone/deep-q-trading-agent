@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 # TODO:
-#   1. Add user model input
-#   2. Evaluate Vanilla RL model
-#   3. Use 1 stock only for evaluation
-#   4. remove break points in loops
+#   1. MAKE SURE THIS WORKS FOR NUMDREG models
+#   2. Use 1 stock only for evaluation => Change Select Action?
 
 with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
+MODEL_METHODS = ['numq', 'numdreg_ad', 'numdreg_id']
 
 def load_weights(model: DQN, IN_PATH):
     model.policy_net.load_state_dict(torch.load(IN_PATH))
@@ -77,10 +77,12 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
                 'total profits': eval_total_profits
             }
         }
-        break
+        # break
 
+    # we need to store this in some directory called model.method
+    dirname = MODEL_METHODS[model.method]
     # we save the weights for this group
-    pretrained_weights = f'weights/numq/{index}/{method}/{group}/numq_pretrain.pt'
+    pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
     save_weights(model=model, OUT_PATH=pretrained_weights)
     experiment_log["pretrained weights"] = pretrained_weights
 
@@ -121,7 +123,7 @@ def log_experiment(experiment:Dict, filename:str, path:str=config["EXPERIMENT_LO
         json.dump(experiment, outfile, indent=4)
 
 
-def evaluate_groups(groups:Dict, index: str, train_set:str='train', eval_set:str='valid'):
+def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='train', eval_set:str='valid'):
     best_group = {
         'group name': '',
         'profit': float('-inf'),
@@ -132,8 +134,8 @@ def evaluate_groups(groups:Dict, index: str, train_set:str='train', eval_set:str
     for method in groups[index]:
         for group in groups[index][method]:
             group_name = f"{method} - {group}"
-            # TODO: Handle input of different models
-            model = DQN(NUMQ)
+
+            model = DQN(method=model_method)
             log = pretrain_on_group(model=model, groups=groups, index=index, method=method, group=group,
                                     train_set=train_set, eval_set=eval_set)
             results[group_name] = deepcopy(log["eval results on index"])
@@ -141,10 +143,28 @@ def evaluate_groups(groups:Dict, index: str, train_set:str='train', eval_set:str
                 best_group["group name"] = group_name
                 best_group["profit"] = log["total profits"]
                 best_group["pretrained weights"] = log["pretrained weights"]
-            break
 
-    # TODO: Handle input of different models
-    model = DQN(NUMQ)
+            # break
+
+    model = DQN(method=model_method)
+    model, _, _, _, _, _ = train(model=model, index=index, symbol=config["SYMBOLS_DICT"][index],
+                                 episodes=config["EPISODES_PRETRAIN_EVAL"], dataset=train_set,
+                                 path=config['STONK_PATH'], splits=config['STONK_INDEX_SPLITS'])
+
+    rl_rewards, rl_profits, rl_running_profits, rl_total_profits = evaluate(model,
+                                                                            index=index,
+                                                                            symbol=config["SYMBOLS_DICT"][index],
+                                                                            dataset=eval_set,
+                                                                            path=config['STONK_PATH'],
+                                                                            splits=config['STONK_INDEX_SPLITS'])
+
+    results['RL'] = {
+        'total profits': rl_total_profits,
+        'rewards': rl_rewards,
+        'profits': rl_profits,
+        'running profits': rl_running_profits
+    }
+
     mkt_rewards, mkt_profits, mkt_running_profits, mkt_total_profits = evaluate(model, index=index,
                                                                                 symbol=config["SYMBOLS_DICT"][index],
                                                                                 dataset=eval_set, strategy=0,
@@ -158,21 +178,23 @@ def evaluate_groups(groups:Dict, index: str, train_set:str='train', eval_set:str
         'profits': mkt_profits,
         'running profits': mkt_running_profits
     }
-    # TODO: Handle input of different models
-    plots_path = f"numq/{index}"
+
+    dirname = MODEL_METHODS[model_method]
+    plots_path = f"{dirname}/{index}"
     plot_group_eval_results(results=results, path=plots_path)
 
     return best_group, results
 
-def run_nenq_on_index(index, symbol, train_set:str='train', eval_set:str='valid',
+def run_nenq_on_index(model_method:int, index:str, symbol:str, train_set:str='train', eval_set:str='valid',
                       path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
     groups = gather_groups()
     #TODO: handle different models
-    best_group, results = evaluate_groups(groups=groups, index=index, train_set=train_set, eval_set=eval_set)
+    best_group, results = evaluate_groups(model_method=model_method, groups=groups, index=index, train_set=train_set, eval_set=eval_set)
 
     previous_weights = best_group["pretrained weights"]
 
-    model = DQN(NUMQ)
+    model = DQN(model_method)
+    # model = DQN(NUMQ)
     model = load_weights(model=model, IN_PATH=previous_weights)
 
     print(f"Start Train on {index}, symbol: {symbol} ... ")
@@ -207,8 +229,8 @@ def run_nenq_on_index(index, symbol, train_set:str='train', eval_set:str='valid'
                                                                                                         only_use_strategy=True,
                                                                                                         path=path,
                                                                                                         splits=splits)
-
-    plots_path= f"numq/{index}"
+    dirname = MODEL_METHODS[model_method]
+    plots_path= f"{dirname}/{index}"
     plot_losses(losses=losses, path=plots_path)
     plot_rewards(rewards=rewards, val_rewards=val_rewards, path=plots_path)
     plot_profits_train(profits=profits, val_profits=val_profits,
@@ -243,7 +265,7 @@ def run_nenq_on_index(index, symbol, train_set:str='train', eval_set:str='valid'
                       mkt_running_profits=mkt_running_profits,
                       path=plots_path)
 
-    weights = f'weights/numq/{index}/numq_{symbol}.pt'
+    weights = f'weights/{dirname}/{index}/{dirname}_{symbol}.pt'
     experiment_log = {
         'index': index,
         'train': {
@@ -266,7 +288,7 @@ def run_nenq_on_index(index, symbol, train_set:str='train', eval_set:str='valid'
 
     print(f"Logging Experiment for Numq Transfer Learning on index: {index} ... ")
 
-    log_experiment(experiment=experiment_log, filename=f"numq_transfer_learning_{index}")
+    log_experiment(experiment=experiment_log, filename=f"{dirname}_transfer_learning_{index}")
 
 
 def plot_group_eval_results(results, path):
@@ -313,16 +335,3 @@ def plot_profits_train(profits, val_profits, mkt_train_total_profits, mkt_valid_
     plt.legend()
     plt.savefig(f"plots/{path}/profits.png")
     plt.close()
-
-if __name__=='__main__':
-    run_nenq_on_index(index='gspc', symbol='^GSPC', train_set='train', eval_set='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
-
-    run_nenq_on_index(index='djia', symbol='^DJI', train_set='train', eval_set='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
-
-    run_nenq_on_index(index='nasdaq', symbol='^IXIC', train_set='train', eval_set='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
-
-    run_nenq_on_index(index='nyse', symbol='^NYA', train_set='train', eval_set='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])

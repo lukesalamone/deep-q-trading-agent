@@ -1,9 +1,6 @@
 import numpy as np
-import torch
-import random
-import torch.nn as nn
+
 import torch.nn.functional as F
-from torch.optim import Adam
 from torch import optim, Tensor
 import yaml
 from itertools import count
@@ -105,7 +102,6 @@ def train(model: DQN, index: str, symbol: str, dataset: str,
     print(f"Training model on {symbol} from {index} with the {dataset} set...")
 
     optim_steps = 0
-    epsilon = config["EPSILON"]
     losses = []
     rewards = []
     total_profits = []

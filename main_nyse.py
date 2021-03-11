@@ -160,5 +160,5 @@ if __name__ == '__main__':
     }
 
     # run_experiment(**experiment_args)
-    run_nenq_on_index(index='nyse', symbol='^NYA', train_set='train', eval_set='valid',
+    run_nenq_on_index(model_method=NUMQ, index='nyse', symbol='^NYA', train_set='train', eval_set='valid',
                       path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"])
