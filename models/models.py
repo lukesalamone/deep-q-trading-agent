@@ -8,6 +8,10 @@ NUMQ = 0
 NUMDREG_AD = 1
 NUMDREG_ID = 2
 
+ACT_MODE = 0
+NUM_MODE = 1
+FULL_MODE = 2
+
 torch.set_default_dtype(torch.float64)
 
 class DQN():
@@ -16,8 +20,9 @@ class DQN():
         self.HOLD = 1
         self.SELL = 2
         
-        # Set method
+        # Set method and mode
         self.method = method
+        self.mode = FULL_MODE
 
         self.policy_net = None
         self.target_net = None
@@ -27,11 +32,11 @@ class DQN():
             self.policy_net = NumQModel()
             self.target_net = NumQModel()
         elif self.method == NUMDREG_AD:
-            self.policy_net = NumDRegModel(NUMDREG_AD)
-            self.target_net = NumDRegModel(NUMDREG_AD)
+            self.policy_net = NumDRegModel(NUMDREG_AD, self.mode)
+            self.target_net = NumDRegModel(NUMDREG_AD, self.mode)
         elif self.method == NUMDREG_ID:
-            self.policy_net = NumDRegModel(NUMDREG_ID)
-            self.target_net = NumDRegModel(NUMDREG_ID)
+            self.policy_net = NumDRegModel(NUMDREG_ID, self.mode)
+            self.target_net = NumDRegModel(NUMDREG_ID, self.mode)
 
         # Make sure they start with the same weights
         # self.hard_update()
@@ -41,13 +46,19 @@ class DQN():
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
     def soft_update(self, tau: float):
-        """Soft update model parameters.
+        """
+        Soft update model parameters.
         θ_target = τ*θ_policy + (1 - τ)*θ_target
         :param tau: interpolation parameter
         :return:
         """
         for target_param, policy_param in zip(self.target_net.parameters(), self.policy_net.parameters()):
             target_param.data.copy_(tau * policy_param.data + (1.0 - tau) * target_param.data)
+    
+    def set_mode(self, m):
+        self.mode = m
+        self.policy_net.mode = self.mode
+        self.target_net.mode = self.mode
 
 
 class NumQModel(nn.Module):
@@ -70,14 +81,14 @@ class NumQModel(nn.Module):
 
 
 class NumDRegModel(nn.Module):
-    def __init__(self, method):
+    def __init__(self, method, mode):
         super().__init__()
 
         # Set method
         self.method = method
 
-        # Training step
-        self.step = 0
+        # Mode for training
+        self.mode = mode
 
         # root
         self.fc1 = nn.Linear(in_features=200, out_features=100, bias=True)
@@ -101,7 +112,7 @@ class NumDRegModel(nn.Module):
         x_act = F.relu(self.fc3_act(x_act))
         q = self.fc_q(x_act)
 
-        if self.step == 1:
+        if self.mode == ACT_MODE:
             # Number branch based on q values
             r = F.softmax(self.fc_q(torch.sigmoid(x_act)))
         else:
@@ -115,10 +126,6 @@ class NumDRegModel(nn.Module):
                 r = F.softmax(self.fc_r(x_num))
 
         return q, r
-
-    def set_step(self, s):
-        self.step = s
-
 
 class StonksNet(nn.Module):
     def __init__(self, size=100):

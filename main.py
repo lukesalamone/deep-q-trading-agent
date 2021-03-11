@@ -36,6 +36,7 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
                                                                                 dataset=dataset,
                                                                                 strategy=0,
                                                                                 strategy_num=1.0,
+                                                                                use_strategy=True,
                                                                                 only_use_strategy=True,
                                                                                 path=path,
                                                                                 splits=splits)
@@ -64,8 +65,8 @@ def run_training(model: DQN, index: str, symbol: str,
                                                                       path=path,
                                                                       splits=splits)
 
-    # MKT on training
-    print('MKT BUY on Training')
+    # MKT on training set
+    print('MKT BUY on Train Set')
     mkt_train_rewards, mkt_train_profits, mkt_train_running_profits, mkt_train_total_profits = evaluate(model,
                                                                                                         index=index,
                                                                                                         symbol=symbol,
@@ -76,7 +77,7 @@ def run_training(model: DQN, index: str, symbol: str,
                                                                                                         path=path,
                                                                                                         splits=splits)
 
-    # MKT on validation
+    # MKT on eval set
     print('MKT BUY on Eval Set')
     mkt_valid_rewards, mkt_valid_profits, mkt_valid_running_profits, mkt_valid_total_profits = evaluate(model,
                                                                                                         index=index,
@@ -104,10 +105,8 @@ def run_training(model: DQN, index: str, symbol: str,
 
     plt.plot(list(range(len(profits))), profits, label="Training", color="lightblue")
     plt.plot(list(range(len(val_profits))), val_profits, label="Validation", color="blue")
-    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_train_total_profits], label="MKT-Train",
-             color="gray")
-    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid",
-             color="black")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_train_total_profits], label="MKT-Train", color="gray")
+    plt.plot(list(range(len(val_profits))), len(val_profits) * [mkt_valid_total_profits], label="MKT-Valid", color="black")
     plt.title("Total Profits")
     plt.savefig(f"plots/{index}_ep_{config['EPISODES']}_profits.png")
     plt.legend()
@@ -145,9 +144,9 @@ def run_experiment(**kwargs):
 if __name__ == '__main__':
     # Input your experiment params
     experiment_args = {
-        'method': NUMQ,
-        'index': 'nyse',
-        'symbol': '^NYA',
+        'index': 'gspc',
+        'symbol': '^GSPC',
+        'method': NUMQ, # 'method': NUMDREG_ID,
         'train_model': True,
         'eval_model': True,
         'train_set': 'train',
