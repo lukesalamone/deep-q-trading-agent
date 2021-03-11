@@ -11,6 +11,7 @@ from copy import deepcopy
 # TODO:
 #   1. MAKE SURE THIS WORKS FOR NUMDREG models
 #   2. Use 1 stock only for evaluation => Change Select Action?
+#   3. PRETRAINING on groups, for NUMDREG: we use NUMQ. only once a group is selected do we use steps 2 and 3
 
 with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
