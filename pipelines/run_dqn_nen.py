@@ -34,7 +34,7 @@ def log_experiment(experiment:Dict, filename:str, path:str=config["EXPERIMENT_LO
 
 def load_experiment(filename:str, path:str=config["EXPERIMENT_LOGS_PATH"]):
     inpath = os.path.join(path, f"{filename}.json")
-    with open(inpath, 'w') as infile:
+    with open(inpath, 'r') as infile:
         data = json.load(infile)
     return data
 
