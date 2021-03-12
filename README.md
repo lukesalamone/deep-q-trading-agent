@@ -397,19 +397,31 @@ Todo - put in all commands to for experiments we showed...
 ## Selected Models without pretraining
 We trained the models for 100 episodes and test on two test sets. One that uses the same timeline as the paper and another that uses the more recent data we used for transfer learning.
 
-From the same timeline as the paper
+
+Results from the paper (2006-2017)
+| Model                | Profits              |
+| -------------------- | -------------------- |
+| NumQ                 | 3.89                 |
+| NumDRwg-AD           | 4.87                 |
+| NumDRwg-ID           | Not given            |
+
+<br/>
+
+From the same timeline as the paper (2006-2017)
 | Model                | Profits              |
 | -------------------- | -------------------- |
 | NumQ                 | 1.67                 |
 | NumDRwg-AD           | 2.63                 |
 | NumDRwg-ID           | 6.13                 |
 
-From the same timeline as the transfer learning
+<br/>
+
+From the same timeline as the transfer learning (2015-2020)
 | Model                | Profits              |
 | -------------------- | -------------------- |
-| NumQ                 | 1.67                 |
-| NumDRwg-AD           | 2.63                 |
-| NumDRwg-ID           | 6.13                 |
+| NumQ                 | -0.342               |
+| NumDRwg-AD           | -0.425               |
+| NumDRwg-ID           | 2.01                 |
 
 <br/><br/>
 
