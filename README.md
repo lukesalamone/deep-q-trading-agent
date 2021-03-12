@@ -202,11 +202,11 @@ During optimization, batch transitions are retrieved from the memory buffer. The
 
 The expected Q values are computed as follows...
 
-Todo
+![q update formula](src/img/q_update.png)
 
 After an episode concludes, we do an update of the target network with the policy network using a soft or hard update.
 
-Todo
+![soft update](src/img/soft_update.png)
 
 We then reset the environment to begin serving states from the beginning of the episode again.
 
