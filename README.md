@@ -171,20 +171,18 @@ Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2`
 
 # Transfer learning
 
-Financial data is noisy and insufficient which leads to overfitting.  
-Solution: use transfer learning.  
+Financial data is noisy and insufficient which leads to overfitting. **Solution**: use transfer learning.  
 
 Before training a model to trade on an index, we train it on stocks that belong to that index, ie. the component stocks.
-Then, we use the pretrained weights to further train on the index. We create 6 groups from the component stocks of an index, given
 
+Then, we use the pretrained weights to further train on the index. Pre-training with all component stocks would be too time consuming, so we create six groups, using two different approaches: **correlation** and **MSE**.
 
-Todo. Also mention confused market threshold here.
+These approaches serve to capture the relationship between a component stock and its index.
 
-## Component stock relationships
+## Component stock-index relationships
 
-Because of their large number of weights, deep neural networks have the tendency to overfit their training data if there isn't enough of it. To counteract this behavior, we reduced the number of weights and changed the training process into a 3-step procedure. One other thing which can help to prevent overfitting is to train with more data. This is why we pretrain using component stocks and finish training on the index stock.
+We create 6 groups of stocks based on 2 approaches: [Pearson correlation](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) and the mean squared predicting error from an autoencoder (MSE). 
 
-But first we need to choose which components to pretrain with. Training with all of them will be too time-consuming. Instead, we will create 6 groups of stocks based on 2 different measures of the components: [Pearson correlation](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient) and the mean squared predicting error from an autoencoder. We will measure each component stock and choose 6 groups according to the following:
 
 | Correlation          | MSE                  |
 | -------------------- | -------------------- |
@@ -200,11 +198,34 @@ Creating these groups allows our models to be pretrained on stocks which are pro
 
 In order to calculate the mean squared error of the component stocks, we need to train an autoencoder which will predict a series of stock prices for each component in an index. That is, the input size of the network will be MxN, where M is the number of components in the index and N is the number of days in the time series.
 
-We will train an autoencoder such that X=Y, where X is the input and Y is the output. The architecture of the autoencoder is very simple, having only 2 hidden layers with 5 units each. These small hidden layers force the model to encode the most essential information of its inputs into a small latent space. All extraneous information not represented in the latent space is discarded. Each of the inputs x<sub>i</sub> will be encoder with the autoencoder as y<sub>i</sub>, and it is against these that mean squared error is measured.
+We will train an autoencoder such that X=Y, where X is the input and Y is the output. 
+
+
+
+The architecture of the autoencoder is very simple, having only 2 hidden layers with 5 units each. These small hidden layers force the model to encode the most essential information of its inputs into a small latent space. All extraneous information not represented in the latent space is discarded. Each of the inputs x<sub>i</sub> will be encoder with the autoencoder as y<sub>i</sub>, and it is against these that mean squared error is measured.
 
 ![autoencoder](src/img/autoencoder.png)
 
+```python
+class StonksNet(nn.Module):
+    def __init__(self, size):
+        super().__init__()
+        self.size = size
+        self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
+        self.out = nn.Linear(in_features=5, out_features=size, bias=True)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.out(x))
+        return x
+```
+
 Training an autoencoder is fairly simple if you understand the basics of neural networks. Rather than training with (input, target) pairs, since we only care that input=input, we will train on (input, input) pairs.
+
+## The Transfer Learning Algorithm
+
+
+
 
 # Finance Environment
 
