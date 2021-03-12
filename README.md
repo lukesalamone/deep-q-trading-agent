@@ -224,6 +224,23 @@ Training an autoencoder is fairly simple if you understand the basics of neural 
 
 ## The Transfer Learning Algorithm
 
+```
+Load index stock data and index component stocks  
+Create 6 groups of component stocks using correlation and MSE  
+For group in groups:  
+    For stock in group:
+        Train agent on stock:
+
+```
+
+For each stock in group:
+If there are weights to load from previous stock, load them
+Train a model
+Freeze weights
+Evaluate on index stock
+Select weights from group with best pre-training results
+Load weights into the a new model.
+Train agent on the index stock.
 
 
 

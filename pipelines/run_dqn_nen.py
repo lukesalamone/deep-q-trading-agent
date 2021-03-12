@@ -192,6 +192,7 @@ def run_dqn_nen_on_index(model_method:int, index:str, symbol:str, train_set:str=
                                                                       symbol=symbol,
                                                                       episodes=config["EPISODES"],
                                                                       dataset=train_set,
+                                                                      pretrained=True,
                                                                       path=path,
                                                                       splits=splits)
 

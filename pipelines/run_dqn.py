@@ -211,7 +211,8 @@ def run_train_loop(model: DQN, index: str, optimizer, symbol: str, dataset: str,
 
 
 def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"], pretrain:bool = False,
-          strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
+          pretrained:bool = False, strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"],
+          splits=config["STONK_INDEX_SPLITS"]):
     # Train NumQ
     if model.method == NUMQ:
         print("Training NumQ...")
@@ -231,13 +232,14 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=confi
             # Initialize optimizer
             optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR_NUMDREGID"])
 
-        # Train action branch
-        model.set_mode(ACT_MODE)
-        print("Training Action Branch...")
-        act_trained = run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
-                                     strategy=strategy, path=path, splits=splits)
-        if pretrain:
-            return act_trained
+        if not pretrained:
+            # Train action branch
+            model.set_mode(ACT_MODE)
+            print("Training Action Branch...")
+            act_trained = run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
+                                         strategy=strategy, path=path, splits=splits)
+            if pretrain:
+                return act_trained
 
         # Train num branch
         model.set_mode(NUM_MODE)
