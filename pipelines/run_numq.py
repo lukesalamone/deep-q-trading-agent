@@ -42,7 +42,7 @@ def select_action(model: DQN, state: Tensor, strategy: int=config["STRATEGY"],
     confidence = (np.abs(q[model.BUY] - q[model.SELL]) / np.sum(q))
     if only_use_strategy:
         selected_action_index = strategy
-        selected_num = strategy_num
+        selected_num = config["SHARE_TRADE_LIMIT"] * strategy_num
     elif use_strategy and confidence < config["THRESHOLD"]:
         selected_action_index = strategy
 

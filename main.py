@@ -1,5 +1,4 @@
 from models.models import *
-# from pipelines.run_dqn import train, evaluate
 from pipelines.run_numq import train, evaluate
 from pipelines.run_nenq import run_nenq_on_index
 import matplotlib.pyplot as plt
@@ -20,8 +19,7 @@ def save_weights(model: DQN, OUT_PATH):
     return
 
 
-def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
-                    path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
+def run_evaluations(model: DQN, index: str, symbol: str, dataset: str, path:str, splits):
     rewards, profits, running_profits, total_profits = evaluate(model,
                                                                 index=index,
                                                                 symbol=symbol,
@@ -52,8 +50,8 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
     plt.show()
 
 
-def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str, strategy: int=1,
-                 use_strategy: bool=False, path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
+def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str,
+                 strategy: int, path:str, splits):
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                       index=index,
                                                                       symbol=symbol,
@@ -133,10 +131,6 @@ def run_experiment(**experiment):
         # create model
         model = DQN(method=method)
 
-        # get strategy values
-        train_strategy = experiment['model'].get('train_strategy', 1)
-        use_strategy = experiment['model'].get('use_strategy', False)
-
         # do we load weights before training or evaluating
         load = experiment['weights'].get('load_weights', False)
         if load:
@@ -147,8 +141,11 @@ def run_experiment(**experiment):
             run_evaluations(model=model, index=index, symbol=symbol, dataset=eval_set, path=path, splits=splits)
 
         elif task =='train':
+            # get strategy values
+            strategy = experiment['model'].get('strategy', 1)
+
             model = run_training(model=model, index=index, symbol=symbol, train_dataset=train_set, valid_dataset=eval_set,
-                                 strategy=train_strategy, use_strategy=use_strategy, path=path, splits=splits)
+                                 strategy=strategy, path=path, splits=splits)
 
             run_evaluations(model=model, index=index, symbol=symbol, dataset=eval_set, path=path, splits=splits)
 
@@ -174,8 +171,7 @@ if __name__ == '__main__':
         'model': {
             # NUMQ, NUMDREG_ID, NUMDREG_AD
             'method': NUMQ,
-            'train strategy': 1,
-            'use strategy': False
+            'strategy': 1
         },
         'weights': {
             'load_weights': False,
