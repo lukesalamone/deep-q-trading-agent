@@ -16,6 +16,7 @@ with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 MODEL_METHODS = ['numq', 'numdreg_ad', 'numdreg_id']
+# METHODS = ['numq', 'numdreg', 'numdreg']
 
 def load_weights(model: DQN, IN_PATH):
     model.policy_net.load_state_dict(torch.load(IN_PATH))
@@ -26,12 +27,43 @@ def save_weights(model: DQN, OUT_PATH):
     torch.save(model.target_net.state_dict(), OUT_PATH)
     return
 
-def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:str, train_set:str='train', eval_set:str='valid'):
+def log_experiment(experiment:Dict, filename:str, path:str=config["EXPERIMENT_LOGS_PATH"]):
+    outpath = os.path.join(path, f"{filename}.json")
+    with open(outpath, 'w') as outfile:
+        json.dump(experiment, outfile, indent=4)
+
+def load_experiment(filename:str, path:str=config["EXPERIMENT_LOGS_PATH"]):
+    inpath = os.path.join(path, f"{filename}.json")
+    with open(inpath, 'w') as infile:
+        data = json.load(infile)
+    return data
+
+def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:str, train_set:str='train',
+                      eval_set:str='valid', load:bool=True):
+
     group_name = f"{method} - {group}"
+    dirname = MODEL_METHODS[model.method]
+
+    if load:
+        try:
+            pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
+            model = load_weights(model=model, IN_PATH=pretrained_weights)
+
+            previous_experiment = f"{dirname}.{index}.{method}.{group}"
+            experiment_log = load_experiment(filename=previous_experiment)
+
+            print(f" ----- STEP 1: START GROUP TRAINING => LOADED PREVIOUS WEIGHTS ---- ")
+            print(f"index: {index}, group: {group_name} ...")
+
+            return model, experiment_log
+        except:
+            pass
+
     experiment_log = {
         'name': group_name,
         'index': index,
         'model-method': model.method,
+        'dirname': dirname,
         'method': method,
         'group': group,
         'train set': train_set,
@@ -56,11 +88,11 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
                                                                           splits=config['STONK_INDEX_SPLITS'])
 
         eval_rewards, eval_profits, eval_running_profits, eval_total_profits = evaluate(model=model,
-                                                                                       index=index,
-                                                                                       symbol=symbol,
-                                                                                       dataset=eval_set,
-                                                                                       path=config['STONK_PATH'],
-                                                                                       splits=config['STONK_INDEX_SPLITS'])
+                                                                                        index=index,
+                                                                                        symbol=symbol,
+                                                                                        dataset=eval_set,
+                                                                                        path=config['STONK_PATH'],
+                                                                                        splits=config['STONK_INDEX_SPLITS'])
 
         experiment_log[symbol] = {
             'train': {
@@ -79,41 +111,34 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         }
         # break
 
-    print(f" ----- STEP 2: EVALUATE GROUP MODEL ON INDEX ---- ")
-    print(f"index: {index}, group: {group_name} ...")
-    idx_eval_rewards, idx_eval_profits, idx_eval_running_profits, idx_eval_total_profits = evaluate(model=model,
-                                                                                                    index=index,
-                                                                                                    symbol=config["SYMBOLS_DICT"][index],
-                                                                                                    dataset=eval_set,
-                                                                                                    path=config['STONK_PATH'],
-                                                                                                    splits=config['STONK_INDEX_SPLITS'])
+        print(f" ----- STEP 2: EVALUATE GROUP MODEL ON INDEX ---- ")
+        print(f"index: {index}, group: {group_name} ...")
+        idx_eval_rewards, idx_eval_profits, idx_eval_running_profits, idx_eval_total_profits = evaluate(model=model,
+                                                                                                        index=index,
+                                                                                                        symbol=config["SYMBOLS_DICT"][index],
+                                                                                                        dataset=eval_set,
+                                                                                                        path=config['STONK_PATH'],
+                                                                                                        splits=config['STONK_INDEX_SPLITS'])
+    
+        experiment_log["eval results on index"] = {
+            'rewards': idx_eval_rewards,
+            'profits': idx_eval_profits,
+            'running profits': idx_eval_running_profits,
+            'total profits': idx_eval_total_profits
+        }
+        experiment_log["total profits"] = idx_eval_total_profits
 
-    experiment_log["eval results on index"] = {
-        'rewards': idx_eval_rewards,
-        'profits': idx_eval_profits,
-        'running profits': idx_eval_running_profits,
-        'total profits': idx_eval_total_profits
-    }
-    experiment_log["total profits"] = idx_eval_total_profits
+        # we save the weights for this group
+        pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
+        save_weights(model=model, OUT_PATH=pretrained_weights)
 
-    # we need to store this in some directory called model.method
-    dirname = MODEL_METHODS[model.method]
-    # we save the weights for this group
-    pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
-    save_weights(model=model, OUT_PATH=pretrained_weights)
-    experiment_log["pretrained weights"] = pretrained_weights
+        experiment_log["pretrained weights"] = pretrained_weights
+        log_experiment(experiment=experiment_log, filename=f"{dirname}.{index}.{method}.{group}")
 
-    log_experiment(experiment=experiment_log, filename=f"{index}.{method}.{group}")
-
-    return experiment_log
-
-def log_experiment(experiment:Dict, filename:str, path:str=config["EXPERIMENT_LOGS_PATH"]):
-    outpath = os.path.join(path, f"{filename}.json")
-    with open(outpath, 'w') as outfile:
-        json.dump(experiment, outfile, indent=4)
+    return model, experiment_log
 
 
-def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='train', eval_set:str='valid'):
+def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='train', eval_set:str='valid', load:bool=True):
     best_group = {
         'group name': '',
         'profit': float('-inf'),
@@ -124,10 +149,9 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
     for method in groups[index]:
         for group in groups[index][method]:
             group_name = f"{method} - {group}"
-
             model = DQN(method=model_method)
-            log = pretrain_on_group(model=model, groups=groups, index=index, method=method, group=group,
-                                    train_set=train_set, eval_set=eval_set)
+            _, log = pretrain_on_group(model=model, groups=groups, index=index, method=method, group=group, load=load,
+                                       train_set=train_set, eval_set=eval_set)
             results[group_name] = deepcopy(log["eval results on index"])
             if log["total profits"] > best_group["profit"]:
                 best_group["group name"] = group_name
@@ -174,11 +198,13 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
 
     return best_group, results
 
-def run_dqn_nen_on_index(model_method:int, index:str, symbol:str, train_set:str= 'train', eval_set:str= 'valid',
-                         path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
+def run_dqn_nen_on_index(model_method: int, index: str, symbol: str, train_set: str='train', eval_set: str='valid',
+                         load: bool=config["LOAD_PREV_EXPERIMENTS"], path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
 
+    dirname = MODEL_METHODS[model_method]
     groups = gather_groups()
-    best_group, results = evaluate_groups(model_method=model_method, groups=groups, index=index, train_set=train_set, eval_set=eval_set)
+    best_group, results = evaluate_groups(model_method=model_method, groups=groups, index=index, train_set=train_set,
+                                          eval_set=eval_set, load=load)
 
     previous_weights = best_group["pretrained weights"]
 
@@ -219,7 +245,8 @@ def run_dqn_nen_on_index(model_method:int, index:str, symbol:str, train_set:str=
                                                                                                         only_use_strategy=True,
                                                                                                         path=path,
                                                                                                         splits=splits)
-    dirname = MODEL_METHODS[model_method]
+
+
     plots_path= f"{dirname}/{index}"
     plot_losses(losses=losses, path=plots_path)
     plot_rewards(rewards=rewards, val_rewards=val_rewards, path=plots_path)
@@ -277,8 +304,7 @@ def run_dqn_nen_on_index(model_method:int, index:str, symbol:str, train_set:str=
     save_weights(model=model, OUT_PATH=weights)
 
     print(f"Logging Experiment for Numq Transfer Learning on index: {index} ... ")
-
-    log_experiment(experiment=experiment_log, filename=f"{dirname}_transfer_learning_{index}")
+    log_experiment(experiment=experiment_log, filename=f"{dirname}.nenq.{index}")
 
 
 def plot_group_eval_results(results, path):
