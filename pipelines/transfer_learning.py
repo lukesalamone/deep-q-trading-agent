@@ -2,6 +2,8 @@ from torch import optim
 from torch.nn import functional as F
 from models.models import StonksNet
 import torch
+import torch.nn as nn
+from torch import Tensor
 
 from utils.load_file import *
 
@@ -26,75 +28,54 @@ def correlation_pipeline():
     df.to_csv(outpath)
 
 
-def train_stonksnet(model:StonksNet):
+def train_stonksnet(prices:Tensor):
+    num_days, num_components = tuple(prices.size())
+    model = StonksNet(size=num_components)
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    samples = fake_prices(model.size, 1000)
+    criterion = nn.MSELoss()
 
     for epoch in range(20):
-        for x_i in samples:
-            y_hat = model(x_i)
-
-            loss = F.mse_loss(input=y_hat, target=x_i)
-
+        # train day by day
+        losses = []
+        for day in prices:
             optimizer.zero_grad()
+            output = model(day)
+            loss = criterion(output, day)
             loss.backward()
             optimizer.step()
-
-        # calculate mse loss
-        print(f'epoch {epoch} avg loss: {np.mean([F.mse_loss(X, model(X)).item() for X in samples])}')
-
-    # run test
-    test_samples = fake_prices(model.size, 100)
-    losses = []
-
-    for t in test_samples:
-        y_hat = model(t)
-        loss = F.mse_loss(y_hat, t)
-        losses.append(loss.item())
-
-    mse = np.mean(losses)
-    print(f'average test loss: {mse}')
-
+            losses.append(loss.item())
+        print(f'epoch {epoch} avg loss: {np.mean(losses)}')
     return model
 
 
 def mininet_pipeline():
-    index = 'nyse'
+    index = 'nasdaq'
+    load = False
+    model_path = f'weights/mininet_{index}.pt'
+
+    # load component prices
+    # each row is a trading day, each column is a component
+    component_prices = load_component_prices(index)
+
+    if load:
+        model = torch.load(model_path)
+    else:
+        model = train_stonksnet(component_prices)
+        torch.save(model, model_path)
+
+    predicted_prices = model(component_prices)
     component_names = index_component_names(index)
-
-    size = len(component_names)
-
-    # model.load_state_dict(torch.load(f'weights/mininet_{index}.pt'))
-    model = StonksNet(size=size)
-    model = train_stonksnet(model)
-
-    save_path = f'weights/mininet_{index}.pt'
-    torch.save(model.state_dict(), save_path)
-
     component_mse = {}
-    prices = []
-    for symbol in component_names:
-        series = component_prices(index, symbol)
-        train, _ = train_test_splits(series)
-        prices.append(train)
 
-    prices = np.array(prices)
-    # prices_trans = prices.T
-    # prices_trans = torch.from_numpy(prices_trans)
-    prices = torch.from_numpy(prices.T)
+    # transpose actual and predicted so that each row is now a component
+    component_prices = torch.transpose(component_prices, dim0=0, dim1=1)
+    predicted_prices = torch.transpose(predicted_prices, dim0=0, dim1=1)
 
-    # predictions_trans = model(prices_trans)
-    # predictions = predictions_trans.numpy().T
-    predictions = model(prices).detach().numpy().T
-    prices = prices.T
-
-    for i, component in enumerate(component_names):
-        actual = prices[i]
-        predicted = predictions[i]
-        mse = F.mse_loss(actual, torch.tensor(predicted))
-        component_mse[component] = mse.item()
-
-    print(component_mse)
+    for i, symbol in enumerate(component_names):
+        predicted = predicted_prices[i]
+        actual = component_prices[i]
+        loss = F.mse_loss(input=predicted, target=actual)
+        component_mse[symbol] = loss.item()
 
     outpath = f'stonks/relationships/stonksnet/{index}.csv'
     df = pd.DataFrame(list(component_mse.items()), columns=['stonk', 'MSE'])
@@ -135,3 +116,4 @@ def gather_groups():
 
 if __name__ == '__main__':
     gather_groups()
+    # mininet_pipeline()

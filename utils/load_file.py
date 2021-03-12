@@ -3,6 +3,7 @@ import yaml
 import pandas as pd
 import numpy as np
 from typing import Tuple
+import torch
 
 with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -37,6 +38,15 @@ def load_index_prices(index_name:str):
     df = pd.read_csv(os.path.join(path, 'index_data', f'{index_name}.csv'))
     df = df[df.columns[1]].astype('float64')
     return df.to_numpy()
+
+def load_component_prices(index_name:str, split=True):
+    component_names = index_component_names(index_name)
+    prices = [component_prices(index_name, c) for c in component_names]
+
+    if split:
+        prices = [train_test_splits(p)[0] for p in prices]
+
+    return torch.transpose(torch.tensor(prices), dim0=0, dim1=1)
 
 def load_prices(index: str, symbol: str):
     path = config["STONK_PATH"]

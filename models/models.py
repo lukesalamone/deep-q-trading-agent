@@ -121,7 +121,7 @@ class NumDRegModel(nn.Module):
 
 
 class StonksNet(nn.Module):
-    def __init__(self, size=100):
+    def __init__(self, size):
         super().__init__()
         self.size = size
         self.fc1 = nn.Linear(in_features=size, out_features=5, bias=True)
