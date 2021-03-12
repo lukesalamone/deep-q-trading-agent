@@ -138,7 +138,51 @@ This is the third and final paper introduced in the paper. It contains an action
 
 # Reinforcement learning
 
-Todo. What are actions, rewards, profits, states.
+The goal is to maximize total profit from trading over a given period.
+To achieve this, we need to predict the best action to take in a given market situation and the number of shares for which to perform this action.
+
+We model this as a reinforcement learning problem:
+
+![RL](src/img/RL.png)
+
+For timestep t:
+- p<sub>t</sub> is the closing trade price
+- S = {s<sub>1</sub>, s<sub>2</sub>, ... , s<sub>T</sub>} is a state, 
+where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing trade price difference, from t - 199 to t
+- a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
+- num<sub>t</sub> denotes the number of shares at time t
+- we denote the profit, profit<sub>t</sub>
+
+![profit](src/img/profit.png)
+- we denote reward, r<sub>t</sub>, and n is some reward window parameter which we set to 100
+
+![reward](src/img/reward.png)
+- total profit at time t is
+
+![totalprofit](src/img/total_profit.png)
+
+We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
+The Deep Q Learning algorithm used in the paper is shown below:
+
+![qlearning](src/img/Q_learning_including_the_action_strategy.png)
+
+In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper:  
+
+**Problem 1**: The agent started falling back on a single action.
+- We tried turning off the action strategy
+- We tried exploration strategies
+- We decided to emulate each action at each step ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
+We introduce this change at step 9. Our reasoning is that it provided more training data for Q-function and stabilized learning.
+
+**Problem 2**: When do we update the target network?
+- Deep Q Learning can require a lot of experimentation. We did not have much time to perform these experiments, 
+so episode, we use soft target updates, that is: θ<sub>target</sub> = Tau*θ<sub>policy</sub> + (1 - Tau)*<sub>target</sub> 
+using interpolation parameter Tau,
+
+**Problem 3**: The Q function was not adapting quickly to new situations in the market.
+- We don’t use Experience Memory Replay (Use random sample of past transitions for minibatch training)
+- We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
+We use the minibatch size (64) as N.
 
 # Training process
 
@@ -270,4 +314,15 @@ How to run this thing
 
 # Selected Results
 
-Some cool graphs
+## Selected Models after pretraining
+The following shows the performance of our pretrained agents on NYSE.
+![pretrained agents](src/img/evaluation_all_groups_nyse_nid.png)
+
+
+## Selected Models after training
+
+### NumQ
+The following shows the performance of NumQ evaluated on NASDAQ.
+![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
+
+### NumDReg-AD
