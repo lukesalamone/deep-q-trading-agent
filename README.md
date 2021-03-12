@@ -176,7 +176,7 @@ We introduce this change at step 9. Our reasoning is that it provided more train
 
 **Problem 2**: When do we update the target network?
 - Deep Q Learning can require a lot of experimentation. We did not have much time to perform these experiments, 
-so episode, we use soft target updates, that is: θ<sub>target</sub> = Tau*θ<sub>policy</sub> + (1 - Tau)*<sub>target</sub> 
+so episode, we use soft target updates, that is: θ<sub>target</sub> = Tau * θ<sub>policy</sub> + (1 - Tau) * θ<<sub>target</sub> 
 using interpolation parameter Tau,
 
 **Problem 3**: The Q function was not adapting quickly to new situations in the market.
