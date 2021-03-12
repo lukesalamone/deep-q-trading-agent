@@ -310,7 +310,89 @@ The other important method of the environment is `update_replay_memory()`. This 
 
 # Putting it all together
 
-How to run this thing
+To run or experiments, we created a command line interface to train a models, run transfer learning, and evaluate saved models.
+
+
+First, install the required dependencies using pip3 or pip...
+
+```
+pip3 install requirements.txt
+```
+
+You can also install dependencies with conda...
+
+```
+conda env create -f envionment.yml
+```
+
+Next, run the following command to clone the repository and move into the directory...
+
+```
+git clone https://github.com/lukesalamone/deep-q-trading-agent
+cd deep-q-trading-agent/
+```
+
+Now we can run experiments from the command line using the following set of arguments...
+
+
+<b>--task</b>: The task we want to run (train, evaluate, transfer_learning)
+
+<b>--epsd</b>: The number of episodes to run (if running training)
+
+<b>--indx</b>: The index to use for the specified task
+
+<b>--symb</b>: The symbol of what we want to trade (not the same as index in the case of transfer learning)
+
+<b>--eval</b>: The dataset to evaluate the agent on
+
+<b>--mthd</b>: Which model architecture and training method to use (numq, numdregad, numdregid)
+
+<b>--stgy</b>: The default strategy to use in a confused market (buy, hold, sell)
+
+<b>--load</b>: The path to the model to load for the specified task (if blank, we initialize a new model)
+
+<b>--save</b>: The path to where the model should be saved (model will not be saved if path not specified)
+
+Running the following command will train an agent for 3 episodes using the NumQ method to trade the dow jones (DJIA) index and save the weights.
+
+```
+python3 trading_agent.py --task train --epsd 3 --mthd numq --indx djia --symb ^DJI --save sample_agent.pt
+```
+
+When running training, plots of losses, training and validation rewards, total profits, and running profits over the validation set will also be generated and saved under the plots directory.
+
+The following command loads and runs the agent trained earlier using the same index (DJIA) on the test period.
+
+```
+python3 trading_agent.py --task evaluate --eval test --mthd numq --indx djia --symb ^DJI --load sample_agent.pt
+```
+
+The following commands can be used to run our experiments from our results.
+
+each method (NumQ, NumDReg-AD, NumDReg-ID) on each index (gspc as example)
+
+```
+python3 trading_agent.py --task train --epsd 100 --mthd numq --indx gspc --symb ^GSPC --save numq_gspc.pt
+```
+
+```
+python3 trading_agent.py --task train --epsd 33 --mthd numdregad --indx gspc --symb ^GSPC --save numdregad_gspc.pt
+```
+
+```
+python3 trading_agent.py --task train --epsd 33 --mthd numdregid --indx gspc --symb ^GSPC --save numdregid_gspc.pt
+```
+
+Note: we train NumDReg-AD and NumDReg-ID for 33 episodes since
+
+The following commands were used to run the transfer learning experiments...
+
+Todo - put in all commands to for experiments we showed...
+
+
+
+
+
 
 # Selected Results
 

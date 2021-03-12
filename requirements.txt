@@ -1,0 +1,6 @@
+torch
+numpy
+pandas
+matplotlib
+jupyterlab
+PyYAML==5.4.1
