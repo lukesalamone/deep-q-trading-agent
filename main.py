@@ -61,7 +61,6 @@ def run_training(model: DQN, index: str, symbol: str,
                                                                       symbol=symbol,
                                                                       dataset=train_dataset,
                                                                       strategy=strategy,
-                                                                      use_strategy=use_strategy,
                                                                       path=path,
                                                                       splits=splits)
 
