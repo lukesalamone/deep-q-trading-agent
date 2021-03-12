@@ -170,7 +170,7 @@ if __name__ == '__main__':
         },
         'model': {
             # NUMQ, NUMDREG_ID, NUMDREG_AD
-            'method': NUMDREG_ID,
+            'method': NUMQ,
             'strategy': 1
         },
         'weights': {
