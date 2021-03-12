@@ -150,15 +150,31 @@ Our training logic defines an episode as one chronological pass through the trai
 
 At the beginning of training, the policy network and target network are initialized. After this, we begin to iterate over a number of episodes.
 
-During an episode, the agent is provided with a state, which you will recall is a sequence of price differences. This state is fed into the policy network, which will calculate Q values and number of shares. We then calculate the reward for each of the three actions and save these rewards in. The (state, action, reward, next_state) transitions for each of the actions are stored in a memory buffer. Next, the model will undergo an optimization step.
+During an episode, the agent is provided with a state, which you will recall is a sequence of price differences. This state is fed into the policy network, which will calculate Q values and number of shares. Notice that the next state will not change depending on our action. This means we know the rewards we could have gotten for any action we can take. We then calculate the reward for each of the three actions. The (state, action, rewards, next_state) transitions for each of the actions are stored in a memory buffer. Note that while we select an action foor each state, this is only to track our progress during training, since we already capture the reward for every state. 
+
+Next, the model will undergo an optimization step.
 
 During optimization, batch transitions are retrieved from the memory buffer. Then the loss is computed as the difference between actual and expected Q values and backpropagated through the policy net.
 
-After an episode concludes, we do an update of the target network with the policy network and reset the environment to begin serving states from the beginning of the episode again.
+The expected Q values are computed as follows...
+
+Todo
+
+After an episode concludes, we do an update of the target network with the policy network using a soft or hard update.
+
+Todo
+
+We then reset the environment to begin serving states from the beginning of the episode again.
 
 # 3 step training (NumDReg-AD/ID)
 
-Todo
+The NumDReg-AD and NumDReg-ID models both require a different training process from NumQ to train their two branches. The three-step training process for both of these models is as follows...
+
+1. Train the action branch: First we train only the action branch. We compute the num values the same way as we do in NumQ as if we never had a num branch. We perform this training for the specified number of episodes.
+
+2. Train the num branch: Next we train the number branch. Here, for each step in each episode, we compare the num outputs with the expected num outputs the same way we would erform updates on the Q batch. We again train for the same number of episodes.
+
+3. Train both branches: Finally, we train the action branch and num branch consecutively as described above. This means we will perform one Q update, and one num update at each step for each episode for the specified number of episodes.
 
 # Action strategies in a "confused market"
 
