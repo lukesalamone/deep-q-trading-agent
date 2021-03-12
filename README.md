@@ -431,5 +431,3 @@ We show the evaluation on the validation set below:
 ### NumQ
 The following shows the performance of NumQ evaluated on NASDAQ.
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
-
-### NumDReg-AD
