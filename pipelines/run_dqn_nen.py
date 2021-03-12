@@ -1,5 +1,5 @@
 from pipelines.transfer_learning import gather_groups
-from pipelines.run_numq import train, evaluate
+from pipelines.run_dqn import train, evaluate
 from models.models import *
 from typing import List, Dict
 import yaml
@@ -186,10 +186,10 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
 
     return best_group, results
 
-def run_nenq_on_index(model_method:int, index:str, symbol:str, train_set:str='train', eval_set:str='valid',
-                      path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
+def run_dqn_nen_on_index(model_method:int, index:str, symbol:str, train_set:str= 'train', eval_set:str= 'valid',
+                         path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
+
     groups = gather_groups()
-    #TODO: handle different models
     best_group, results = evaluate_groups(model_method=model_method, groups=groups, index=index, train_set=train_set, eval_set=eval_set)
 
     previous_weights = best_group["pretrained weights"]

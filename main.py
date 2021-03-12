@@ -1,6 +1,6 @@
 from models.models import *
-from pipelines.run_numq import train, evaluate
-from pipelines.run_nenq import run_nenq_on_index
+from pipelines.run_dqn import train, evaluate
+from pipelines.run_dqn_nen import run_dqn_nen_on_index
 import matplotlib.pyplot as plt
 import yaml
 
@@ -124,8 +124,8 @@ def run_experiment(**experiment):
     splits = experiment['data'].get('splits', config['STONK_INDEX_SPLITS'])
 
     if task == 'transfer_learning':
-        run_nenq_on_index(model_method=method, index=index, symbol=symbol, train_set=train_set,
-                          eval_set=eval_set, path=path, splits=splits)
+        run_dqn_nen_on_index(model_method=method, index=index, symbol=symbol, train_set=train_set,
+                             eval_set=eval_set, path=path, splits=splits)
 
     else:
         # create model
