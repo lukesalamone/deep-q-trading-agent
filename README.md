@@ -225,28 +225,28 @@ Training an autoencoder is fairly simple if you understand the basics of neural 
 ## The Transfer Learning Algorithm
 
 ```
-Load index stock data and index component stocks  
+Load index data and index component stocks  
 Create 6 groups of component stocks using correlation and MSE  
 For group in groups:  
     For stock in group:
-        Train agent on stock:
-
+        Train a model on stock using NumQ. (action branch)
+    Evaluate group on index
+Pick agent with highest total profit on index
+if NumQ:
+    Train acion branch on index
+else if NumDReg - AD or NumDReg - ID:
+    Freeze action branch on index
+    Train number branch on index
+    Train end to end on index
 ```
-
-For each stock in group:
-If there are weights to load from previous stock, load them
-Train a model
-Freeze weights
-Evaluate on index stock
-Select weights from group with best pre-training results
-Load weights into the a new model.
-Train agent on the index stock.
-
-
 
 # Finance Environment
 
-Maybe optional
+For convenience, we include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. Instead, we use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
+
+The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
+
+The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
 
 # Putting it all together
 
