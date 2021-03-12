@@ -1,7 +1,6 @@
 from models.models import *
-# from pipelines.run_dqn import train, evaluate
-from pipelines.run_numq import train, evaluate
-from pipelines.run_nenq import run_nenq_on_index
+from pipelines.run_dqn import train, evaluate
+from pipelines.run_dqn_nen import run_dqn_nen_on_index
 import matplotlib.pyplot as plt
 import yaml
 
@@ -20,8 +19,7 @@ def save_weights(model: DQN, OUT_PATH):
     return
 
 
-def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
-                    path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
+def run_evaluations(model: DQN, index: str, symbol: str, dataset: str, path:str, splits):
     rewards, profits, running_profits, total_profits = evaluate(model,
                                                                 index=index,
                                                                 symbol=symbol,
@@ -52,16 +50,13 @@ def run_evaluations(model: DQN, index: str, symbol: str, dataset: str,
     plt.show()
 
 
-def run_training(model: DQN, index: str, symbol: str,
-                 train_dataset: str, valid_dataset: str,
-                 strategy: int=1, use_strategy: bool=False,
-                 path:str=config["STOCK_DATA_PATH"], splits=config["INDEX_SPLITS"]):
+def run_training(model: DQN, index: str, symbol: str, train_dataset: str, valid_dataset: str,
+                 strategy: int, path:str, splits):
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                       index=index,
                                                                       symbol=symbol,
                                                                       dataset=train_dataset,
                                                                       strategy=strategy,
-                                                                      use_strategy=use_strategy,
                                                                       path=path,
                                                                       splits=splits)
 
@@ -114,51 +109,77 @@ def run_training(model: DQN, index: str, symbol: str,
     return model
 
 
-def run_experiment(**kwargs):
-    model = DQN(method=experiment_args['method'])
+def run_experiment(**experiment):
 
-    if kwargs['load_model'] and kwargs['IN_PATH']:
-        model = load_weights(model=model, IN_PATH=kwargs['IN_PATH'])
+    # GET TASK AND METHOD
+    task = experiment.get('task', 'train')
+    method = experiment['model'].get('method', NUMQ)
 
-    if kwargs['train_model'] and kwargs['train_set']:
-        if kwargs['path'] and kwargs['splits']:
-            model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
-                                 train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'],
-                                 strategy=kwargs['train strategy'], use_strategy=kwargs['use strategy'],
-                                 path=kwargs['path'], splits=kwargs['splits'])
-        else:
-            model = run_training(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
-                                 train_dataset=kwargs['train_set'], valid_dataset=kwargs['eval_set'],
-                                 strategy=kwargs['train strategy'], use_strategy=kwargs['use strategy'])
+    # DATA
+    index = experiment['data'].get('index', 'gspc')
+    symbol = experiment['data'].get('symbol', '^GSPC')
+    train_set = experiment['data'].get('train_set', 'train')
+    eval_set = experiment['data'].get('eval_set', 'valid')
+    path = experiment['data'].get('path', config['STONK_PATH'])
+    splits = experiment['data'].get('splits', config['STONK_INDEX_SPLITS'])
 
-        if kwargs['save_model'] and kwargs['OUT_PATH']:
-            save_weights(model=model, OUT_PATH=kwargs['OUT_PATH'])
+    if task == 'transfer_learning':
+        run_dqn_nen_on_index(model_method=method, index=index, symbol=symbol, train_set=train_set,
+                             eval_set=eval_set, path=path, splits=splits)
 
-    if kwargs['eval_model'] and kwargs['eval_set']:
-        if kwargs['path'] and kwargs['splits']:
-            run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'],
-                            dataset=kwargs['eval_set'], path=kwargs['path'], splits=kwargs['splits'])
-        else:
-            run_evaluations(model=model, index=kwargs['index'], symbol=kwargs['symbol'], dataset=kwargs['eval_set'])
+    else:
+        # create model
+        model = DQN(method=method)
+
+        # do we load weights before training or evaluating
+        load = experiment['weights'].get('load_weights', False)
+        if load:
+            weights_in_path = experiment['weights'].get('weights_in_path', 'numq_test.pt')
+            model = load_weights(model=model, IN_PATH=f'weights/{weights_in_path}')
+
+        if task == 'evaluate':
+            run_evaluations(model=model, index=index, symbol=symbol, dataset=eval_set, path=path, splits=splits)
+
+        elif task =='train':
+            # get strategy values
+            strategy = experiment['model'].get('strategy', 1)
+
+            model = run_training(model=model, index=index, symbol=symbol, train_dataset=train_set, valid_dataset=eval_set,
+                                 strategy=strategy, path=path, splits=splits)
+
+            run_evaluations(model=model, index=index, symbol=symbol, dataset=eval_set, path=path, splits=splits)
+
+            # do we save weights after training
+            save = experiment['weights'].get('save_weights', False)
+            if save:
+                weights_out_path = experiment['weights'].get('weights_out_path', 'numq_test.pt')
+                save_weights(model=model, OUT_PATH=f'weights/{weights_out_path}')
 
 if __name__ == '__main__':
     # Input your experiment params
-    experiment_args = {
-        'index': 'gspc',
-        'symbol': '^GSPC',
-        'method': NUMQ, # 'method': NUMDREG_ID,
-        'train_model': True,
-        'eval_model': True,
-        'train_set': 'train',
-        'eval_set': 'valid',
-        'load_model': False,
-        'IN_PATH': 'weights/numq_test.pt',
-        'save_model': False,
-        'OUT_PATH': 'weights/numq_test.pt',
-        'path': config['STONK_PATH'],
-        'splits': config['STONK_INDEX_SPLITS'],
-        'train strategy': 1,
-        'use strategy': False
+    experiment = {
+        # train, evaluate, transfer_learning
+        'task': 'transfer_learning',
+        'data': {
+            'index': 'gspc',
+            'symbol': '^GSPC',
+            'train_set': 'train',
+            'eval_set': 'valid',
+            'path': config['STONK_PATH'],
+            'splits': config['STONK_INDEX_SPLITS']
+        },
+        'model': {
+            # NUMQ, NUMDREG_ID, NUMDREG_AD
+            'method': NUMDREG_ID,
+            'strategy': 1
+        },
+        'weights': {
+            'load_weights': False,
+            'save_weights': False,
+            # weights/{your_weights_here}
+            'weights_in_path': 'numq_test.pt',
+            'weights_out_path': 'numq_test.pt',
+        }
     }
 
-    run_experiment(**experiment_args)
+    run_experiment(**experiment)
