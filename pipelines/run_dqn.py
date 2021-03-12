@@ -213,7 +213,7 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
     return model, losses, rewards, val_rewards, total_profits, val_total_profits
 
 
-def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"],
+def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"], pretrain:bool = False,
           strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
     # Train NumQ
     if model.method == NUMQ:
@@ -233,6 +233,8 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=confi
         print("Training Action Branch...")
         act_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
                                      strategy=strategy, path=path, splits=splits)
+        if pretrain:
+            return act_trained
 
         # Train num branch
         model.set_mode(NUM_MODE)

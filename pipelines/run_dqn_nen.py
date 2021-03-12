@@ -10,8 +10,7 @@ from copy import deepcopy
 
 # TODO:
 #   1. MAKE SURE THIS WORKS FOR NUMDREG models
-#   2. Use 1 stock only for evaluation => Change Select Action?
-#   3. PRETRAINING on groups, for NUMDREG: we use NUMQ. only once a group is selected do we use steps 2 and 3
+#   2. PRETRAINING on groups, for NUMDREG: we use NUMQ. only once a group is selected do we use steps 2 and 3
 
 with open("config.yml", "r") as ymlfile:
     config = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -38,7 +37,6 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         'train set': train_set,
         'eval set': eval_set,
         'episodes on components': config["EPISODES_COMPONENT_STOCKS"],
-        'episodes on index': config["EPISODES_PRETRAIN_EVAL"],
         'total profits': 0
     }
 
@@ -53,6 +51,7 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
                                                                           symbol=symbol,
                                                                           episodes=config["EPISODES_COMPONENT_STOCKS"],
                                                                           dataset=train_set,
+                                                                          pretrain=True,
                                                                           path=config['STONK_PATH'],
                                                                           splits=config['STONK_INDEX_SPLITS'])
 
@@ -80,25 +79,7 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         }
         # break
 
-    # we need to store this in some directory called model.method
-    dirname = MODEL_METHODS[model.method]
-    # we save the weights for this group
-    pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
-    save_weights(model=model, OUT_PATH=pretrained_weights)
-    experiment_log["pretrained weights"] = pretrained_weights
-
-    print(f" ----- STEP 2: START INDEX TRAINING WITH GROUP WEIGHTS ---- ")
-    print(f"index: {index}, group: {group_name} ...")
-
-    model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
-                                                                      index=index,
-                                                                      symbol=config["SYMBOLS_DICT"][index],
-                                                                      episodes=config["EPISODES_PRETRAIN_EVAL"],
-                                                                      dataset=train_set,
-                                                                      path=config['STONK_PATH'],
-                                                                      splits=config['STONK_INDEX_SPLITS'])
-
-    print(f" ----- STEP 3: EVALUATE GROUP MODEL ON INDEX ---- ")
+    print(f" ----- STEP 2: EVALUATE GROUP MODEL ON INDEX ---- ")
     print(f"index: {index}, group: {group_name} ...")
     idx_eval_rewards, idx_eval_profits, idx_eval_running_profits, idx_eval_total_profits = evaluate(model=model,
                                                                                                     index=index,
@@ -114,6 +95,14 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         'total profits': idx_eval_total_profits
     }
     experiment_log["total profits"] = idx_eval_total_profits
+
+    # we need to store this in some directory called model.method
+    dirname = MODEL_METHODS[model.method]
+    # we save the weights for this group
+    pretrained_weights = f'weights/{dirname}/{index}/{method}/{group}/{dirname}_pretrain.pt'
+    save_weights(model=model, OUT_PATH=pretrained_weights)
+    experiment_log["pretrained weights"] = pretrained_weights
+
     log_experiment(experiment=experiment_log, filename=f"{index}.{method}.{group}")
 
     return experiment_log
@@ -144,12 +133,11 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
                 best_group["group name"] = group_name
                 best_group["profit"] = log["total profits"]
                 best_group["pretrained weights"] = log["pretrained weights"]
-
             # break
 
     model = DQN(method=model_method)
     model, _, _, _, _, _ = train(model=model, index=index, symbol=config["SYMBOLS_DICT"][index],
-                                 episodes=config["EPISODES_PRETRAIN_EVAL"], dataset=train_set,
+                                 episodes=config["EPISODES_COMPONENT_STOCKS"], dataset=train_set, pretrain=True,
                                  path=config['STONK_PATH'], splits=config['STONK_INDEX_SPLITS'])
 
     rl_rewards, rl_profits, rl_running_profits, rl_total_profits = evaluate(model,
