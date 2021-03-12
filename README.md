@@ -160,7 +160,27 @@ After an episode concludes, we do an update of the target network with the polic
 
 Todo
 
-# Component stock relationships
+# Action strategies in a "confused market"
+
+A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:
+
+![confusedmarket](src/img/confusedmarket.png)
+
+If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD.
+Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` to worked well.
+
+# Transfer learning
+
+Financial data is noisy and insufficient which leads to overfitting.  
+Solution: use transfer learning.  
+
+Before training a model to trade on an index, we train it on stocks that belong to that index, ie. the component stocks.
+Then, we use the pretrained weights to further train on the index. We create 6 groups from the component stocks of an index, given
+
+
+Todo. Also mention confused market threshold here.
+
+## Component stock relationships
 
 Because of their large number of weights, deep neural networks have the tendency to overfit their training data if there isn't enough of it. To counteract this behavior, we reduced the number of weights and changed the training process into a 3-step procedure. One other thing which can help to prevent overfitting is to train with more data. This is why we pretrain using component stocks and finish training on the index stock.
 
@@ -176,7 +196,7 @@ So for each stock we will measure its correlation with the index and measure its
 
 Creating these groups allows our models to be pretrained on stocks which are proxies to the index, or in the case of the "low" group, on stocks which might help the agent generalize later on.
 
-# Autoencoding component stocks
+## Autoencoding component stocks
 
 In order to calculate the mean squared error of the component stocks, we need to train an autoencoder which will predict a series of stock prices for each component in an index. That is, the input size of the network will be MxN, where M is the number of components in the index and N is the number of days in the time series.
 
@@ -185,26 +205,6 @@ We will train an autoencoder such that X=Y, where X is the input and Y is the ou
 ![autoencoder](src/img/autoencoder.png)
 
 Training an autoencoder is fairly simple if you understand the basics of neural networks. Rather than training with (input, target) pairs, since we only care that input=input, we will train on (input, input) pairs.
-
-# Transfer learning
-
-Financial data is noisy and insufficient which leads to overfitting.  
-Solution: use transfer learning.  
-
-Before training a model to trade on an index, we train it on stocks that belong to that index, ie. the component stocks.
-Then, we use the pretrained weights to further train on the index. We do not use all the stocks in an index as data for pretraining. We create 
-
-
-Todo. Also mention confused market threshold here.
-
-# Action strategies in a "confused market"
-
-A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:
-
-![confusedmarket](src/img/confusedmarket.png)
-
-If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD.
-Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` to worked well.
 
 # Finance Environment
 
