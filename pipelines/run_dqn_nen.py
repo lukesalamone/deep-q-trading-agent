@@ -178,19 +178,22 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
         'running profits': rl_running_profits
     }
 
+    """
     mkt_rewards, mkt_profits, mkt_running_profits, mkt_total_profits = evaluate(model, index=index,
                                                                                 symbol=config["SYMBOLS_DICT"][index],
                                                                                 dataset=eval_set, strategy=0,
                                                                                 strategy_num=1.0, only_use_strategy=True,
                                                                                 path=config['STONK_PATH'],
                                                                                 splits=config['STONK_INDEX_SPLITS'])
-
+    
+    
     results['MKT'] = {
         'total profits': mkt_total_profits,
         'rewards': mkt_rewards,
         'profits': mkt_profits,
         'running profits': mkt_running_profits
     }
+    """
 
     dirname = MODEL_METHODS[model_method]
     plots_path = f"{dirname}/{index}"
@@ -313,7 +316,7 @@ def plot_group_eval_results(results, path):
         plt.plot(list(range(len(running_profits))), running_profits, label=group)
     plt.title("Eval Profits")
     plt.legend()
-    plt.savefig(f"plots/{path}/evaluation_all_groups.png")
+    plt.savefig(f"plots/{path}/evaluation_all_groups2.png")
     plt.close()
 
 def plot_profits_eval(running_profits, total_profits, mkt_total_profits, mkt_running_profits, path):

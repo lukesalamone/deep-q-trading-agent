@@ -416,7 +416,15 @@ From the same timeline as the transfer learning
 ## Selected Models after pretraining
 The following shows the performance of our pretrained agents on NYSE.
 ![pretrained agents](src/img/evaluation_all_groups_nyse_nid.png)
+## Pretraining on groups
 
+Example: **Numdreg_id**, 15 episodes for each component stock, 33 episodes for Training Steps 2 and 3.  
+We can see the performance of agents trained on each group, for example, on GSPC:
+![agentsongroups](src/img/numdreg_id/evaluation_all_groups2.png)
+
+Here, we select the group `correlation - highlow` before further training on the index.  
+We show the evaluation on the validation set below:
+![agentsongroups](src/img/numdreg_id/evaluation.png)
 
 ## Selected Models after training
 
