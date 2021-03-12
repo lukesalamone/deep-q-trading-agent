@@ -213,11 +213,13 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
     return model, losses, rewards, val_rewards, total_profits, val_total_profits
 
 
-def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int = config["EPISODES"], strategy: int = config["STRATEGY"]):
+def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"],
+          strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
     # Train NumQ
     if model.method == NUMQ:
         print("Training NumQ...")
-        return run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
+        return run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+                              strategy=strategy, path=path, splits=splits)
     
     # Train NumDReg
     elif model.method == NUMDREG_AD or model.method == NUMDREG_ID:
@@ -229,17 +231,20 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int = con
         # Train action branch
         model.set_mode(ACT_MODE)
         print("Training Action Branch...")
-        act_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
+        act_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+                                     strategy=strategy, path=path, splits=splits)
 
         # Train num branch
         model.set_mode(NUM_MODE)
         print("Training Number Branch...")
-        num_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
+        num_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+                                     strategy=strategy, path=path, splits=splits)
 
         # Train both branches
         model.set_mode(FULL_MODE)
         print("Training Full...")
-        full_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes, strategy=strategy)
+        full_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+                                      strategy=strategy, path=path, splits=splits)
 
         return full_trained
     
