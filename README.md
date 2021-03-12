@@ -39,7 +39,7 @@ Running this file will save each of the components into a directory `raw/{index_
 
 # NumQ
 
-The Jeong paper experiments with three architectures for trading. The first and simplist of these architectures is called NumQ which uses a single branch of fully-connected layers to determine both the action to take and the ratios for those actions. Its structure is shown below:
+The Jeong paper experiments with three architectures for trading. The first and simplest of these architectures is called NumQ which uses a single branch of fully-connected layers to determine both the action to take and the ratios for those actions. Its structure is shown below:
 
 ![numq architecture](src/img/numq.png)
 
@@ -150,7 +150,7 @@ Our training logic defines an episode as one chronological pass through the trai
 
 At the beginning of training, the policy network and target network are initialized. After this, we begin to iterate over a number of episodes.
 
-During an episode, the agent is provided with a state, which you will recall is a number of price differences. This state is fed into the policy network, which will calculate Q values and ratios. We then calculate the reward for each of the three actions. The (state, action, reward, next_state) transitions for each of the actions are stored in a memory buffer. Next, the model will undergo an optimization step.
+During an episode, the agent is provided with a state, which you will recall is a sequence of price differences. This state is fed into the policy network, which will calculate Q values and number of shares. We then calculate the reward for each of the three actions and save these rewards in. The (state, action, reward, next_state) transitions for each of the actions are stored in a memory buffer. Next, the model will undergo an optimization step.
 
 During optimization, batch transitions are retrieved from the memory buffer. Then the loss is computed as the difference between actual and expected Q values and backpropagated through the policy net.
 

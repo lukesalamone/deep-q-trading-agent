@@ -159,7 +159,7 @@ if __name__ == '__main__':
     # Input your experiment params
     experiment = {
         # train, evaluate, transfer_learning
-        'task': 'transfer_learning',
+        'task': 'train',
         'data': {
             'index': 'gspc',
             'symbol': '^GSPC',
@@ -170,12 +170,12 @@ if __name__ == '__main__':
         },
         'model': {
             # NUMQ, NUMDREG_ID, NUMDREG_AD
-            'method': NUMQ,
+            'method': NUMDREG_AD,
             'strategy': 1
         },
         'weights': {
             'load_weights': False,
-            'save_weights': False,
+            'save_weights': True,
             # weights/{your_weights_here}
             'weights_in_path': 'numq_test.pt',
             'weights_out_path': 'numq_test.pt',

@@ -104,7 +104,7 @@ def optimize_model(model: DQN(NUMQ), optimizer, memory: ReplayMemory, optim_acti
     return loss.item()
 
 # Train model on given training data
-def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: int = config["EPISODES"], 
+def run_train_loop(model: DQN, index: str, optimizer, symbol: str, dataset: str, episodes: int = config["EPISODES"], 
                    strategy: int = config["STRATEGY"], use_strategy: bool=config["USE_STRATEGY_TRAIN"], path: str=config["STOCK_DATA_PATH"], 
                    splits=config["INDEX_SPLITS"]):
 
@@ -118,9 +118,6 @@ def run_train_loop(model: DQN, index: str, symbol: str, dataset: str, episodes: 
     total_profits = []
     val_rewards = []
     val_total_profits = []
-
-    # Initialize optimizer
-    optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
 
     # initialize env
     env = make_env(index=index, symbol=symbol, dataset=dataset, path=path, splits=splits)
@@ -218,20 +215,26 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=confi
     # Train NumQ
     if model.method == NUMQ:
         print("Training NumQ...")
-        return run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+        # Initialize optimizer
+        optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR"])
+        return run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
                               strategy=strategy, path=path, splits=splits)
     
     # Train NumDReg
     elif model.method == NUMDREG_AD or model.method == NUMDREG_ID:
         if model.method == NUMDREG_AD:
             print("Training NumDReg-AD...")
+            # Initialize optimizer
+            optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR_NUMDREGAD"])
         elif model.method == NUMDREG_ID:
             print("Training NumDReg-ID...")
+            # Initialize optimizer
+            optimizer = optim.Adam(model.policy_net.parameters(), lr=config["LR_NUMDREGID"])
 
         # Train action branch
         model.set_mode(ACT_MODE)
         print("Training Action Branch...")
-        act_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+        act_trained = run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
                                      strategy=strategy, path=path, splits=splits)
         if pretrain:
             return act_trained
@@ -239,13 +242,13 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=confi
         # Train num branch
         model.set_mode(NUM_MODE)
         print("Training Number Branch...")
-        num_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+        num_trained = run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
                                      strategy=strategy, path=path, splits=splits)
 
         # Train both branches
         model.set_mode(FULL_MODE)
         print("Training Full...")
-        full_trained = run_train_loop(model=model, index=index, symbol=symbol, dataset=dataset, episodes=episodes,
+        full_trained = run_train_loop(model=model, index=index, optimizer=optimizer, symbol=symbol, dataset=dataset, episodes=episodes,
                                       strategy=strategy, path=path, splits=splits)
 
         return full_trained
