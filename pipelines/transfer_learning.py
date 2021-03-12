@@ -4,6 +4,7 @@ from models.models import StonksNet
 import torch
 import torch.nn as nn
 from torch import Tensor
+import numpy as np
 
 from utils.load_file import *
 
@@ -115,5 +116,5 @@ def gather_groups():
 
 
 if __name__ == '__main__':
-    gather_groups()
-    # mininet_pipeline()
+    groups = gather_groups()
+    print(groups)
