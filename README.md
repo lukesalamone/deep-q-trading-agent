@@ -214,13 +214,9 @@ We then reset the environment to begin serving states from the beginning of the 
 
 The NumDReg-AD and NumDReg-ID models both require a different training process from NumQ to train their two branches. The three-step training process for both of these models is as follows...
 
-![threesteptraining](src/img/confusedmarket.png)
+![threesteptraining](src/img/three-step-training.png)
 
-1. Train the action branch: First we train only the action branch. We compute the num values the same way as we do in NumQ as if we never had a num branch. We perform this training for the specified number of episodes.
-
-2. Train the num branch: Next we train the number branch. Here, for each step in each episode, we compare the num outputs with the expected num outputs the same way we would erform updates on the Q batch. We again train for the same number of episodes.
-
-3. Train both branches: Finally, we train the action branch and num branch consecutively as described above. This means we will perform one Q update, and one num update at each step for each episode for the specified number of episodes.
+Note: we train each step for the same number of episodes
 
 # Action strategies in a "confused market"
 
