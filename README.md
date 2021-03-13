@@ -62,10 +62,8 @@ For timestep t:
 where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing trade price difference, from t - 199 to t
 - a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
 - num<sub>t</sub> denotes the number of shares at time t
-- we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) / p<sub>t-1</sub>
-- we denote reward, r<sub>t</sub>, and n is some reward window parameter which we set to 100
-
-![reward](src/img/reward.png)
+- we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>
+- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100
 - total profit at time t, Total profit = &sum;profit<sub>t</sub>
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
@@ -90,7 +88,7 @@ The expected Q values for each action and state pair are simply computed as the 
 
 ![q update formula](src/img/q_update.png)
 
-After an episode concludes, we do an update of the target network with the policy network using a soft or hard update. For a soft update, we update after every optimization step with a tau of 0.0003. For hard updates, we update with a tau of 1 at the end of each episode.
+After an episode concludes, we do an update of the target network with the policy network using a soft or hard update. For a soft update, we update after every optimization step with a tau of 0.0003. For hard updates, we update with a Tau of 1 at the end of each episode.
 
 ![soft update](src/img/soft_update.png)
 
