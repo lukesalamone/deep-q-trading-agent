@@ -78,8 +78,15 @@ def optimize_model(model: DQN(NUMQ), optimizer, memory: ReplayMemory, optim_acti
         pred_batch = q_batch
         next_pred_batch = next_q_batch
     else:
-        pred_batch = num_batch
-        next_pred_batch = next_num_batch
+        # numdreg_id number branch outputs (64, 1).
+        # we compute reward for 3 actions so (64, 1) => (64, 3)
+        if model.method == NUMDREG_ID:
+            pred_batch = num_batch.repeat(1, 3)
+            next_pred_batch = next_num_batch.repeat(1, 3)
+        else:
+            # numdreg_ad
+            pred_batch = num_batch
+            next_pred_batch = next_num_batch
 
     # Get max q values for next state
     next_max_pred_batch, next_max_pred_i_batch = next_pred_batch.detach().max(dim=1)
@@ -210,8 +217,8 @@ def run_train_loop(model: DQN, index: str, optimizer, symbol: str, dataset: str,
     return model, losses, rewards, val_rewards, total_profits, val_total_profits
 
 
-def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"], pretrain:bool = False,
-          pretrained:bool = False, strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"],
+def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=config["EPISODES"], pretrain: bool=False,
+          pretrained: bool=False, strategy: int=config["STRATEGY"], path: str=config["STONK_PATH"],
           splits=config["STONK_INDEX_SPLITS"]):
     # Train NumQ
     if model.method == NUMQ:
@@ -256,6 +263,7 @@ def train(model: DQN, index: str, symbol: str, dataset: str, episodes: int=confi
         return full_trained
     
     print("Invalid model method")
+
     return
 
 # Evaluate model on validation or test set and return list of profits and total profits
