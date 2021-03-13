@@ -38,8 +38,8 @@ def load_experiment(filename:str, path:str=config["EXPERIMENT_LOGS_PATH"]):
         data = json.load(infile)
     return data
 
-def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:str, train_set:str='train',
-                      eval_set:str='valid', load:bool=True):
+def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:str, train_set: str='train',
+                      eval_set: str='valid', episodes_components: int=config['EPISODES_COMPONENT_STOCKS'], load: bool=False):
 
     group_name = f"{method} - {group}"
     dirname = MODEL_METHODS[model.method]
@@ -68,7 +68,7 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         'group': group,
         'train set': train_set,
         'eval set': eval_set,
-        'episodes on components': config["EPISODES_COMPONENT_STOCKS"],
+        'episodes on components': episodes_components,
         'total profits': 0
     }
 
@@ -81,7 +81,7 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
         model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                           index=index,
                                                                           symbol=symbol,
-                                                                          episodes=config["EPISODES_COMPONENT_STOCKS"],
+                                                                          episodes=episodes_components,
                                                                           dataset=train_set,
                                                                           pretrain=True,
                                                                           path=config['STONK_PATH'],
@@ -138,7 +138,8 @@ def pretrain_on_group(model: DQN, groups: Dict, index:str, method: str, group:st
     return model, experiment_log
 
 
-def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='train', eval_set:str='valid', load:bool=True):
+def evaluate_groups(model_method:int, groups:Dict, index: str, train_set: str='train', eval_set: str='valid',
+                    episodes_components: int=config["EPISODES_COMPONENT_STOCKS"], load: bool=False):
     best_group = {
         'group name': '',
         'profit': float('-inf'),
@@ -150,8 +151,9 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
         for group in groups[index][method]:
             group_name = f"{method} - {group}"
             model = DQN(method=model_method)
-            _, log = pretrain_on_group(model=model, groups=groups, index=index, method=method, group=group, load=load,
-                                       train_set=train_set, eval_set=eval_set)
+            _, log = pretrain_on_group(model=model, groups=groups, index=index, method=method, group=group,
+                                       train_set=train_set, eval_set=eval_set, episodes_components=episodes_components,
+                                       load=load)
             results[group_name] = deepcopy(log["eval results on index"])
             if log["total profits"] > best_group["profit"]:
                 best_group["group name"] = group_name
@@ -160,9 +162,9 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
             # break
 
     model = DQN(method=model_method)
-    model, _, _, _, _, _ = train(model=model, index=index, symbol=config["SYMBOLS_DICT"][index],
-                                 episodes=config["EPISODES_COMPONENT_STOCKS"], dataset=train_set, pretrain=True,
-                                 path=config['STONK_PATH'], splits=config['STONK_INDEX_SPLITS'])
+    model, _, _, _, _, _ = train(model=model, index=index, symbol=config["SYMBOLS_DICT"][index], episodes=episodes_components,
+                                 dataset=train_set, pretrain=True, path=config['STONK_PATH'],
+                                 splits=config['STONK_INDEX_SPLITS'])
 
     rl_rewards, rl_profits, rl_running_profits, rl_total_profits = evaluate(model,
                                                                             index=index,
@@ -202,12 +204,13 @@ def evaluate_groups(model_method:int, groups:Dict, index: str, train_set:str='tr
     return best_group, results
 
 def run_dqn_nen_on_index(model_method: int, index: str, symbol: str, train_set: str='train', eval_set: str='valid',
+                         episodes: int=config["EPISODES"], episodes_components: int=config["EPISODES_COMPONENT_STOCKS"],
                          load: bool=config["LOAD_PREV_EXPERIMENTS"], path=config["STONK_PATH"], splits=config["STONK_INDEX_SPLITS"]):
 
     dirname = MODEL_METHODS[model_method]
     groups = gather_groups()
     best_group, results = evaluate_groups(model_method=model_method, groups=groups, index=index, train_set=train_set,
-                                          eval_set=eval_set, load=load)
+                                          eval_set=eval_set, episodes_components=episodes_components, load=load)
 
     previous_weights = best_group["pretrained weights"]
 
@@ -219,7 +222,7 @@ def run_dqn_nen_on_index(model_method: int, index: str, symbol: str, train_set: 
     model, losses, rewards, val_rewards, profits, val_profits = train(model=model,
                                                                       index=index,
                                                                       symbol=symbol,
-                                                                      episodes=config["EPISODES"],
+                                                                      episodes=episodes,
                                                                       dataset=train_set,
                                                                       pretrained=True,
                                                                       path=path,

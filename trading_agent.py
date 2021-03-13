@@ -12,6 +12,7 @@ with open("config.yml", "r") as ymlfile:
 parser = argparse.ArgumentParser(description="Run the deep Q trading agent")
 parser.add_argument('--task', type=str, help='The task we want to run (train, evaluate, transfer_learning)')
 parser.add_argument('--epsd', type=int, help='The number of episodes to run')
+parser.add_argument('--epcp', type=int, help='The number of episodes to run for each component stock in index')
 parser.add_argument('--indx', type=str, help='The index we are trading (gspc, djia, nasdaq, nyse)')
 parser.add_argument('--symb', type=str, help='The symbol of what we are trading')
 parser.add_argument('--eval', type=str, help='The data set to evaluate on (train, valid, test)')
@@ -28,12 +29,13 @@ if __name__ == '__main__':
     strategy_dict = {'buy': 0, 'hold': 1, 'sell': 2}
 
     # Set default values
-    task = 'evaluate'
+    task = 'train'
     episodes = config['EPISODES']
+    episodes_components = config['EPISODES_COMPONENT_STOCKS']
     index = 'gspc'
     symbol = '^GSPC'
     eval_set = 'valid'
-    method = method_dict['numq']
+    method = method_dict['numdregid']
     strategy = strategy_dict['hold']
     load_path = 'temp_agent.pt'
     save_path = 'temp_agent.pt'
@@ -43,6 +45,8 @@ if __name__ == '__main__':
         task = args.task
     if args.epsd:
         episodes = args.epsd
+    if args.epcp:
+        episodes_components = args.epcp
     if args.indx:
         index = args.indx
     if args.symb:
@@ -77,7 +81,8 @@ if __name__ == '__main__':
             'strategy': strategy
         },
         'training': {
-            'episodes':episodes
+            'episodes':episodes,
+            'episodes_components':episodes_components
         },
         'weights': {
             'load_weights': args.load,

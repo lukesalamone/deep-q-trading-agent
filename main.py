@@ -14,10 +14,10 @@ if __name__ == '__main__':
         # train, evaluate, transfer_learning
         'task': 'transfer_learning',
         'data': {
-            'index': 'djia',
-            'symbol': '^DJI',
-            'train_set': 'train',
-            'eval_set': 'valid',
+            'index': 'gspc',
+            'symbol': '^GSPC',
+            'train_set': 'full_train',
+            'eval_set': 'test',
             'path': config['STONK_PATH'],
             'splits': config['STONK_INDEX_SPLITS']
         },
@@ -27,7 +27,8 @@ if __name__ == '__main__':
             'strategy': 1
         },
         'training': {
-            'episodes':config['EPISODES']
+            'episodes':config['EPISODES'],
+            'episodes_components': config['EPISODES_COMPONENT_STOCKS']
         },
         'weights': {
             'load_weights': False,

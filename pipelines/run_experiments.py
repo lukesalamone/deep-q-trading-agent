@@ -125,8 +125,11 @@ def run_experiment(**experiment):
     splits = experiment['data'].get('splits', config['STONK_INDEX_SPLITS'])
 
     if task == 'transfer_learning':
-        run_dqn_nen_on_index(model_method=method, index=index, symbol=symbol, train_set=train_set,
-                             eval_set=eval_set, path=path, splits=splits)
+
+        episodes = experiment['training'].get('episodes', config['EPISODES'])
+        episodes_components = experiment['training'].get('episodes_components', config['EPISODES_COMPONENT_STOCKS'])
+        run_dqn_nen_on_index(model_method=method, index=index, symbol=symbol, train_set=train_set, eval_set=eval_set,
+                             episodes=episodes, episodes_components=episodes_components, path=path, splits=splits)
 
     else:
         # create model
