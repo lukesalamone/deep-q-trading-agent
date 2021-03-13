@@ -427,6 +427,8 @@ From the same timeline as the transfer learning (2015-2020)
 | NumDRwg-AD           | -0.425               |
 | NumDRwg-ID           | 2.01                 |
 
+The model results here are in the expected order and still make a profit using the same data, but fall short of the profits achieved by the paper.
+
 <br/><br/>
 
 ## Selected Models after pretraining
@@ -447,3 +449,17 @@ We show the evaluation on the validation set below:
 ### NumQ
 The following shows the performance of NumQ evaluated on NASDAQ.
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
+
+It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results.
+
+# Conclusion
+
+While The agents trained here in our experimets make a profits on average, they fall short of the results in the paper. This likely has a few different reasons including...
+
+1. <b>Missing details in the paper</b> including, among other things, how batches for the model optimization step are to be updated, how optimization works for the third step in three step training, how exploration or alternatives to exploration are implemented, and some other smaller details.
+
+2. <b>A different and smaller timeline</b> to train and test the model likely caused lower profits.
+
+3. <b>A problem within the RL process</b> likely is another likely cause of smaller profits. While the losses decrease, and rewards and profits increase as expected and furthermore appear to converge, they do so at a lower level than expected.
+
+Regardless, it is clear the RL agent learns to generate some profits and the proposed modifications in architecture and training process described above do result in the expected improvements in profits.
