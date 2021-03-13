@@ -9,7 +9,7 @@ This paper adresses three problems.
 2. What action strategy for a trading agent in "confused market".
 3. There is a lack of financial data for deep learning, which leads to overfitting. 
 
-The authors if the paper use Reinforcement Learning and transfer learning to tackle these problems. We implement their core idea, which is the combination of a Deep Q Network to evaluate trading actions given a market situation with a Deep Neural Network Regressor to predict the number of shares with which to perform the best action. We implement and present the three Deep Q-learning architectures used in the paper, the transfer learning algorithm used, two different means of index component rankings, and action strategies for dealing with what the authors call a "confused market".
+The authors if the paper use Reinforcement Learning and transfer learning to tackle these problems. We implement their core idea, which is the combination of a Deep Q Network to evaluate trading actions given a market situation with a Deep Neural Network Regressor to predict the number of shares with which to perform the best action. We implement and present the three Deep Q-learning architectures used in the paper, the transfer learning algorithm used, two different means of index component stock rankings, and action strategies for dealing with what the authors call a "confused market".
 
 We note that the authors make the following assumptions regarding their Reinforcement Learning agent:
 - It can perform one action each day: BUY, HOLD, or SELL. 
@@ -52,10 +52,7 @@ Running this file will save each of the components into a directory `raw/{index_
 
 # Reinforcement learning
 
-The goal is to maximize total profit from trading over a given period.
-To achieve this, we need to predict the best action to take in a given market situation and the number of shares for which to perform this action.
-
-We model this as a reinforcement learning problem:
+The goal is to maximize total profit from trading over a given period. To achieve this, we need to predict the best action to take in a given market situation and the number of shares for which to perform this action. Here's a description of the reinforcement learning problem:
 
 ![RL](src/img/RL.png)
 
@@ -65,15 +62,9 @@ For timestep t:
 where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing trade price difference, from t - 199 to t
 - a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
 - num<sub>t</sub> denotes the number of shares at time t
-- we denote the profit, profit<sub>t</sub>
-
-![profit](src/img/profit.png)
-- we denote reward, r<sub>t</sub>, and n is some reward window parameter which we set to 100
-
-![reward](src/img/reward.png)
-- total profit at time t is
-
-![totalprofit](src/img/total_profit.png)
+- we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>
+- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100
+- total profit at time t, Total profit = &sum;profit<sub>t</sub>
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
 
@@ -97,7 +88,7 @@ The expected Q values for each action and state pair are simply computed as the 
 
 ![q update formula](src/img/q_update.png)
 
-After an episode concludes, we do an update of the target network with the policy network using a soft or hard update. For a soft update, we update after every optimization step with a tau of 0.0003. For hard updates, we update with a tau of 1 at the end of each episode.
+After an episode concludes, we do an update of the target network with the policy network using a soft or hard update. For a soft update, we update after every optimization step with a tau of 0.0003. For hard updates, we update with a Tau of 1 at the end of each episode.
 
 ![soft update](src/img/soft_update.png)
 
@@ -135,7 +126,7 @@ We introduce this change at step 9. Our reasoning is that it provided more train
 
 **Problem 2**: When do we update the target network?
 - Deep Q Learning can require a lot of experimentation. We did not have much time to perform these experiments, 
-so episode, we use soft target updates, that is: θ<sub>target</sub> = Tau * θ<sub>policy</sub> + (1 - Tau) * θ<sub>target</sub> 
+so episode, we use soft target updates, that is: &theta;<sub>target</sub> = Tau * &theta;<sub>policy</sub> + (1 - Tau) * &theta;<sub>target</sub> 
 using interpolation parameter Tau,
 
 **Problem 3**: The Q function was not adapting quickly to new situations in the market.
