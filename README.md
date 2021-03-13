@@ -1,10 +1,23 @@
 # Deep Q Trading Agent
 
-Here we will demonstrate an implementation of the paper [Improving financial trading decision using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al. This paper covers three separate deep Q-learning architectures, transfer learning, two different means of index component rankings, and action strategies for dealing with confused markets.
+Here we will demonstrate an implementation of the paper [Improving financial trading decision using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al.  
 
-Trading agents for finance are nothing new. Previous attempts at creating automated trading systems have used statistical indicators such as moving average to determine how to act at any time. However, most of these agents focus on the action to take, opting to trade a fixed number of shares. This is not realistic for real-world trading scenarios.
+Trading agents for finance are nothing new. Previous attempts at creating automated trading systems have used statistical indicators such as moving average to determine how to act at any time. However, most of these agents focus on the action to take, opting to trade a fixed number of shares. This is not realistic for real-world trading scenarios. 
 
-This repository contains all of the code you'll need to train and run a deep-Q agent, but if you'd like a deeper understanding of how it all works we've included a tutorial below.
+This paper adresses three problems.
+1. What trading action a trader should perform on a given day, and for how many shares.
+2. What action strategy for a trading agent in "confused market".
+3. There is a lack of financial data for deep learning, which leads to overfitting. 
+
+The authors if the paper use Reinforcement Learning and transfer learning to tackle these problems. We implement their core idea, which is the combination of a Deep Q Network to evaluate trading actions given a market situation with a Deep Neural Network Regressor to predict the number of shares with which to perform the best action. We implement and present the three Deep Q-learning architectures used in the paper, the transfer learning algorithm used, two different means of index component rankings, and action strategies for dealing with what the authors call a "confused market".
+
+We note that the authors make the following assumptions regarding their Reinforcement Learning agent:
+- It can perform one action each day: BUY, HOLD, or SELL. 
+- It does not need to own the stock before selling it, meaning that shorting is allowed. 
+- It has infinite funds, so its trading strategy will not be affected by its online performance. 
+- It does not incur transaction fees for any of its actions.
+
+This repository contains all of the code you'll need to train and run a Deep-Q Learning Agent with DNN Regressor, but if you'd like a deeper understanding of how it all works we've included a tutorial and explanations below.
 
 # Tutorial Overview
 
