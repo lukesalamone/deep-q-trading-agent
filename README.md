@@ -64,23 +64,6 @@ where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing tr
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
 
-# The Finance Environment
-
-For convenience, we include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. Instead, we use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
-
-The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
-
-The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
-
-# Action strategies in a "confused market"
-
-A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:
-
-![confusedmarket](src/img/confusedmarket.png)
-
-If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD.
-Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` to worked well.
-
 # Training process
 
 Reinforcement learning agents are trained over a number of episodes, during which they observe states, take actions, receive rewards, and observe the next state. These (state, action, reward, next_state) transitions are stored in a memory buffer which the agent then uses to optimize its neural network.
@@ -107,6 +90,22 @@ After an episode concludes, we do an update of the target network with the polic
 
 We then reset the environment to begin serving states from the beginning of the episode again.
 
+## The Finance Environment
+
+We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
+
+The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
+
+The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
+
+## Action strategies in a "confused market"
+
+A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:
+
+![confusedmarket](src/img/confusedmarket.png)
+
+If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
+
 ## The Deep Q Learning Algorithm:
 
 The Deep Q Learning algorithm used in the paper is shown below:
@@ -131,7 +130,9 @@ using interpolation parameter Tau,
 - We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
 We use the minibatch size (64) as N.
 
-# NumQ
+
+# Model Architectures
+## NumQ
 
 The Jeong paper experiments with three architectures for trading. The first and simplest of these architectures is called NumQ which uses a single branch of fully-connected layers to determine both the action to take and the ratios for those actions. Its structure is shown below:
 
@@ -162,7 +163,7 @@ class NumQModel(nn.Module):
 
 Of note in this model are the return values of the `forward()` function. Rather than simply returning one result of a forward-pass through the network, the NumQ network will return two values: a list of Q values associated with the input, and the ratios for each of the three actions (BUY, HOLD, SELL). When in use, the Q values determine which action will be taken, while the ratios determine with how many shares the action will be executed with.
 
-# NumDReg-AD
+## NumDReg-AD
 
 The second model is a bit more complex. It contains a branch for determining the Q values associated with the input, as well as a separate branch for determining the numbers of shares to trade.
 
@@ -222,7 +223,7 @@ class NumDRegModel(nn.Module):
         self.step = s
 ```
 
-# NumDReg-ID
+## NumDReg-ID
 
 This is the third and final paper introduced in the paper. It contains an action-independent branch which specifies the number of shares to trade. Its architecture is identical to NumDReg-AD except for the output layer in the number branch which has a size of one. The activation function of the number branch was not specified in the paper, so we opted to use the [sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function).
 
@@ -230,7 +231,7 @@ This is the third and final paper introduced in the paper. It contains an action
 
 ![numdreg-id architecture](src/img/numdregid.png)
 
-# 3 step training (NumDReg-AD/ID)
+## 3 step training (NumDReg-AD/ID)
 
 The NumDReg-AD and NumDReg-ID models both require a different training process from NumQ to train their two branches. The three-step training process for both of these models is as follows...
 
