@@ -62,15 +62,11 @@ For timestep t:
 where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing trade price difference, from t - 199 to t
 - a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
 - num<sub>t</sub> denotes the number of shares at time t
-- we denote the profit, profit<sub>t</sub>
-
-![profit](src/img/profit.png)
+- we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) / p<sub>t-1</sub>
 - we denote reward, r<sub>t</sub>, and n is some reward window parameter which we set to 100
 
 ![reward](src/img/reward.png)
-- total profit at time t is
-
-![totalprofit](src/img/total_profit.png)
+- total profit at time t, Total profit = &sum;profit<sub>t</sub>
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
 
