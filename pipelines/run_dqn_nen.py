@@ -319,7 +319,7 @@ def plot_group_eval_results(results, path):
         plt.plot(list(range(len(running_profits))), running_profits, label=group)
     plt.title("Eval Profits")
     plt.legend()
-    plt.savefig(f"plots/{path}/evaluation_all_groups2.png")
+    plt.savefig(f"plots/{path}/evaluation_all_groups.png")
     plt.close()
 
 def plot_profits_eval(running_profits, total_profits, mkt_total_profits, mkt_running_profits, path):

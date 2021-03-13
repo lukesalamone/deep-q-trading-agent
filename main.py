@@ -14,8 +14,8 @@ if __name__ == '__main__':
         # train, evaluate, transfer_learning
         'task': 'transfer_learning',
         'data': {
-            'index': 'gspc',
-            'symbol': '^GSPC',
+            'index': 'djia',
+            'symbol': '^DJI',
             'train_set': 'full_train',
             'eval_set': 'test',
             'path': config['STONK_PATH'],
