@@ -106,9 +106,9 @@ The other important method of the environment is `update_replay_memory()`. This 
 
 ## Action strategies in a "confused market"
 
-A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:
+A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
 
-![confusedmarket](src/img/confusedmarket.png)
+|Q(s<sub>t</sub>, a<sub>BUY</sub>) - Q(s<sub>t</sub>, a<sub>SELL</sub>)| &#47; &sum;|Q(s<sub>t</sub>, a)| &lt; threshold  
 
 If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
 
