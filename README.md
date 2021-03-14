@@ -473,7 +473,7 @@ We show the evaluation on the validation set below:
 The following shows the performance of NumQ evaluated on NASDAQ.
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
 
-It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results.
+It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
 
 # Conclusion
 
