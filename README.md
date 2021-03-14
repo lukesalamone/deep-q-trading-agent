@@ -68,7 +68,7 @@ where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing tr
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
 
-# Training process
+## Training process
 
 Reinforcement learning agents are trained over a number of episodes, during which they interact with an environment, in which they observe states, take actions, and receive rewards. By taking a step in the environment, an agent experiences a tuple `(state, action, reward, next_state)`. In other words, the agent observes `state`, performs `action`, receives `reward` and observes `next_state`. We call this a transition and we store these transitions in a memory buffer. The memory buffer can be described as containing the agent's experience. In Deep Q Learning, the agent leverages this experience to learn how to evaluate actions at a given state.
 
@@ -76,7 +76,7 @@ Recall that the `next_state` is not a function of the `action` taken. We choose 
 
 Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes sense in this context. We used a `FinanceEnvironment` class to track information during training, which has the added benefit of making the code more readable.
 
-## The Finance Environment
+### The Finance Environment
 
 We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
 
@@ -84,23 +84,51 @@ The `FinanceEnvironment` class exposes only a few necessary methods to the train
 
 The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
 
-## The Deep Q Learning Algorithm:
+### The Deep Q Learning Algorithm in the Paper:
 
 The Deep Q Learning algorithm used in the paper is shown below:
 
 ![qlearning](src/img/Q_learning_including_the_action_strategy.png)
 
-The learning process for deep Q networks is a bit different from normal Q learning models. Deep Q models typically contain two neural networks working in tandem: a policy network which evaluates a given state, and a target network which is periodically updated with the weights from the policy net. This periodic update pattern helps to maintain stability while training.
+### Action strategies in a "confused market"
 
-At the beginning of training, the policy network and target network are initialized. After this, we begin to iterate over a number of episodes.
+A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
 
-During an episode, the agent is provided with a state, which you will recall is a sequence of price differences. This state is fed into the policy network, which will calculate Q values and number of shares. Notice that the next state will not change depending on our action. This means we know the rewards we could have gotten for any action we can take. We then calculate the reward for each of the three actions. The (state, action, rewards, next_state) transitions for each of the actions are stored in a memory buffer. Note that while we select an action foor each state, this is only to track our progress during training, since we already capture the reward for every state. 
+|Q(s<sub>t</sub>, a<sub>BUY</sub>) - Q(s<sub>t</sub>, a<sub>SELL</sub>)| &#47; &sum;|Q(s<sub>t</sub>, a)| &lt; threshold  
+
+If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
+
+Deep Q Networks use two neural networks working in tandem: a policy network which evaluates actions at a given state, and a target network which is periodically updated with the weights from the policy net. These two networks are used to learn the optimal
+
+### Our Implementation:
+
+Our implementation can be described by the following algorithm:
+```
+Initialize policy network, target network, and environment.
+For each each episode:
+	While not done:
+    Take a step
+    Select action and number using policy network and number branch
+    Compute reward for all 3 actions
+    Store state transition (state, action, rewards_all_actions, next_state) in memory buffer
+    Optimize:
+	    Get batch of transitions from memory buffer
+	    Compute loss as difference between actual and expected q values
+      Backpropagate loss
+    Soft update target network with policy network parameters
+  Reset environment
+```
+
+At the beginning of training, the policy network and target network are initialized. Iterating for a number of epides
+After this, we begin to iterate over a number of episodes.
 
 Next, the model will undergo an optimization step.
 
-During optimization, batch transitions are retrieved from the memory buffer. Then the loss is computed as the difference between actual and expected Q values and backpropagated through the policy net.
+During optimization, batch transitions are retrieved from the memory buffer. 
 
-The expected Q values for each action and state pair are simply computed as the sum of the observed reward for taking that action and the discounted Q values generated by the next state.  
+Then the loss is computed as the smooth l1 loss between actual and expected Q values and backpropagated through the policy net.
+
+The expected Q values for each action and state pair are computed as the sum of the observed reward for taking that action and the discounted Q values generated by the next state.  
 
 Q(s<sub>t</sub>, a<sub>t</sub>) := Q(s<sub>t</sub>, a<sub>t</sub>) + &theta; * { r<sub>t</sub> + &gamma; Q(s<sub>t</sub>, a&prime;) - Q(s<sub>t</sub>, a<sub>t</sub>) }
 
@@ -112,15 +140,7 @@ Our code can also use hard updates, which would take place every N episodes, but
 
 We then reset the environment to begin serving states from the beginning of the episode again.
 
-## Action strategies in a "confused market"
-
-A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
-
-|Q(s<sub>t</sub>, a<sub>BUY</sub>) - Q(s<sub>t</sub>, a<sub>SELL</sub>)| &#47; &sum;|Q(s<sub>t</sub>, a)| &lt; threshold  
-
-If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
-
-## Challenges faced in implementation and design choices.
+### Challenges faced in implementation and design choices.
 
 In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper.
 
@@ -137,9 +157,7 @@ using interpolation parameter &tau;,
 
 **Problem 3**: The Q function was not adapting quickly to new situations in the market.
 - We don’t use Experience Memory Replay (Use random sample of past transitions for minibatch training)
-- We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
-We use the minibatch size (64) as N.
-
+- We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)). We use the minibatch size (64) as N.
 
 # Model Architectures
 ## NumQ
