@@ -1,6 +1,6 @@
 # Deep Q Trading Agent
 
-Here we will demonstrate an implementation of the paper [Improving financial trading decision using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al.  
+Here we will demonstrate an implementation of the paper [Improving financial trading decisions using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al.  
 
 Trading agents for finance are nothing new. Previous attempts at creating automated trading systems have used statistical indicators such as moving average to determine how to act at any time. However, most of these agents focus on the action to take, opting to trade a fixed number of shares. This is not realistic for real-world trading scenarios. 
 
@@ -60,7 +60,7 @@ where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing tr
 - a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
 - num<sub>t</sub> denotes the number of shares at time t
 - we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>
-- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100
+- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100 based on experimenting with different values.
 - total profit at time t, Total profit = &sum;profit<sub>t</sub>
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
