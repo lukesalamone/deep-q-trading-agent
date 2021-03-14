@@ -70,11 +70,27 @@ We use Deep Q Learning to learn optimal action values to maximize total profits,
 
 # Training process
 
-Reinforcement learning agents are trained over a number of episodes, during which they observe states, take actions, receive rewards, and observe the next state. These (state, action, reward, next_state) transitions are stored in a memory buffer which the agent then uses to optimize its neural network.
+Reinforcement learning agents are trained over a number of episodes, during which they interact with an environment, in which they observe states, take actions, and receive rewards. By taking a step in the environment, an agent experiences a tuple `(state, action, reward, next_state)`. In other words, the agent observes `state`, performs `action`, receives `reward` and observes `next_state`. We call this a transition and we store these transitions in a memory buffer. The memory buffer can be described as containing the agent's experience. In Deep Q Learning, the agent leverages this experience to learn how to evaluate actions at a given state.
+
+Recall that the `next_state` is not a function of the `action` taken. We choose to emulate all actions at a given state. In other words, at s<sub>t</t> the agent will take what it evaluates to be the optimal action, a<sup>*</sup>, but we compute and record the rewards obtained for all three possible actions, BUY, HOLD, and SELL. So in our implementation, a transition is `(state, action, rewards_all_actions, next_state)`.
+
+Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes sense in this context. We used a `FinanceEnvironment` class to track information during training, which has the added benefit of making the code more readable.
+
+## The Finance Environment
+
+We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
+
+The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
+
+The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
+
+## The Deep Q Learning Algorithm:
+
+The Deep Q Learning algorithm used in the paper is shown below:
+
+![qlearning](src/img/Q_learning_including_the_action_strategy.png)
 
 The learning process for deep Q networks is a bit different from normal Q learning models. Deep Q models typically contain two neural networks working in tandem: a policy network which evaluates a given state, and a target network which is periodically updated with the weights from the policy net. This periodic update pattern helps to maintain stability while training.
-
-Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes logical sense in this context. We used a `TradingEnvironment` class to track information during training, which has the added benefit of making the code more readable. The details of `TradingEnvironment` will be discussed later on.
 
 At the beginning of training, the policy network and target network are initialized. After this, we begin to iterate over a number of episodes.
 
@@ -96,14 +112,6 @@ Our code can also use hard updates, which would take place every N episodes, but
 
 We then reset the environment to begin serving states from the beginning of the episode again.
 
-## The Finance Environment
-
-We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
-
-The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
-
-The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
-
 ## Action strategies in a "confused market"
 
 A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
@@ -112,13 +120,9 @@ A confused market is defined as a market situation where it is too difficult to 
 
 If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
 
-## The Deep Q Learning Algorithm:
+## Challenges faced in implementation and design choices.
 
-The Deep Q Learning algorithm used in the paper is shown below:
-
-![qlearning](src/img/Q_learning_including_the_action_strategy.png)
-
-In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper:  
+In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper.
 
 **Problem 1**: The agent started falling back on a single action.
 - We tried turning off the action strategy
