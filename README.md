@@ -1,6 +1,6 @@
 # Deep Q Trading Agent
 
-Here we will demonstrate an implementation of the paper [Improving financial trading decision using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al.  
+Here we will demonstrate an implementation of the paper [Improving financial trading decisions using deep Q-learning: Predicting the number of shares, action strategies, and transfer learning](https://www.sciencedirect.com/science/article/abs/pii/S0957417418306134) by Jeong et al.  
 
 Trading agents for finance are nothing new. Previous attempts at creating automated trading systems have used statistical indicators such as moving average to determine how to act at any time. However, most of these agents focus on the action to take, opting to trade a fixed number of shares. This is not realistic for real-world trading scenarios. 
 
@@ -60,7 +60,7 @@ where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing tr
 - a<sub>t</sub> is the action taken, with values BUY = 1, HOLD = 0, SELL = -1
 - num<sub>t</sub> denotes the number of shares at time t
 - we denote the profit, profit<sub>t</sub> = num<sub>t</sub> * a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>
-- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100
+- we denote reward, r<sub>t</sub> = num<sub>t</sub> * (1 + a<sub>t</sub> * (p<sub>t</sub> - p<sub>t-1</sub>) &#47; p<sub>t-1</sub>) * p<sub>t-1</sub> &#47;  p<sub>t-n</sub>, and n is some reward window parameter which we set to 100 based on experimenting with different values.
 - total profit at time t, Total profit = &sum;profit<sub>t</sub>
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
@@ -69,7 +69,7 @@ We use Deep Q Learning to learn optimal action values to maximize total profits,
 
 Reinforcement learning agents are trained over a number of episodes, during which they interact with an environment, in which they observe states, take actions, and receive rewards. By taking a step in the environment, an agent experiences a tuple `(state, action, reward, next_state)`. In other words, the agent observes `state`, performs `action`, receives `reward` and observes `next_state`. We call this a transition and we store these transitions in a memory buffer. The memory buffer can be described as containing the agent's experience. In Deep Q Learning, the agent leverages this experience to learn how to evaluate actions at a given state.
 
-Recall that the `next_state` is not a function of the `action` taken. We choose to emulate all actions at a given state. In other words, at s<sub>t</sub> the agent will take what it evaluates to be the optimal action, a<sup>*</sup>, but we compute and record the rewards obtained for all three possible actions, BUY, HOLD, and SELL. So in our implementation, a transition is `(state, action, rewards_all_actions, next_state)`.
+Recall that the `next_state` is not a function of the `action` taken since the agents action will not have a significant effect on the index price change. We choose to emulate all actions at a given state. In other words, at s<sub>t</sub> the agent will take what it evaluates to be the optimal action, a<sup>*</sup>, but we compute and record the rewards obtained for all three possible actions, BUY, HOLD, and SELL. So in our implementation, a transition is `(state, action, rewards_all_actions, next_state)`.
 
 Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes sense in this context. We used a `FinanceEnvironment` class to track information during training, which has the added benefit of making the code more readable.
 
