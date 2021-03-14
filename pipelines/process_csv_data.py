@@ -3,7 +3,7 @@ import yaml
 
 # Get all config values and hyperparameters
 with open("config.yml", "r") as ymlfile:
-    config = yaml.load(ymlfile)
+    config = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 def process_file(file, inpath, outpath):
     with open(os.path.join(inpath, file)) as f:
@@ -32,6 +32,9 @@ def process_file(file, inpath, outpath):
 
 
 if __name__ == '__main__':
-    for file in os.listdir(config["RAW_DATA_PATH"]):
-        process_file(file, config["RAW_DATA_PATH"], config["CLEAN_DATA_PATH"])
+    for directory in os.listdir('raw'):
+        if directory.startswith('.'):
+            continue
+
+        process_dir(os.path.join('raw', directory), 'stock_data')
         print('processed file: ', file)
