@@ -485,17 +485,17 @@ The model results here are in the expected order and still make a profit using t
 <br/><br/>
 
 ## Selected Models after pretraining
-The following shows the performance of our pretrained agents on NYSE.
-![pretrained agents](src/img/evaluation_all_groups_nyse_nid.png)
+
 ## Pretraining on groups
 
-Example: **Numdreg_id**, 15 episodes for each component stock, 33 episodes for Training Steps 2 and 3.  
-We can see the performance of agents trained on each group, for example, on GSPC:
-![agentsongroups](src/img/numdreg_id/evaluation_all_groups2.png)
+The following shows the performance of our pretrained agents on groups of component stocks from the index GSPC.
+Method: **Numdreg_id**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)  
+
+![pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
 
 Here, we select the group `correlation - highlow` before further training on the index.  
-We show the evaluation on the validation set below:
-![agentsongroups](src/img/numdreg_id/evaluation.png)
+We show the evaluation on the test set below:
+![numdregid gspc transfer learning on test set](src/img/numdreg_id/gspc/evaluation.png)
 
 ## Selected Models after training
 
