@@ -489,13 +489,14 @@ The model results here are in the expected order and still make a profit using t
 ## Pretraining on groups
 
 The following shows the performance of our pretrained agents on groups of component stocks from the index GSPC.
-Method: **Numdreg_id**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)  
+Method: **NumDReg-ID**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)
 
 ![pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
 
-Here, we select the group `correlation - highlow` before further training on the index.  
-We show the evaluation on the test set below:
+Given the total profits achieved, we select the best performing group `mse - highlow` and load those weights into our NumDReg-ID agent before further training it for Steps 2 and 3 on the index stock. We show a plot of the running Total Profits achieved when evaluating on the test set below:  
+
 ![numdregid gspc transfer learning on test set](src/img/numdreg_id/gspc/evaluation.png)
+
 
 ## Selected Models after training
 
