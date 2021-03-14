@@ -353,7 +353,9 @@ Now we can run experiments from the command line using the following set of argu
 
 <b>--symb</b>: The symbol of what we want to trade (not the same as index in the case of transfer learning)
 
-<b>--eval</b>: The dataset to evaluate the agent on
+<b>--train</b>: The dataset to train the agent on (train, full_train)
+
+<b>--eval</b>: The dataset to evaluate the agent on (valid, test)
 
 <b>--mthd</b>: Which model architecture and training method to use (numq, numdregad, numdregid)
 
@@ -398,20 +400,21 @@ Note: we train NumDReg-AD and NumDReg-ID for 33 episodes since the training is s
 The following commands were used to run the transfer learning experiments for each method (NumQ, NumDReg-AD, NumDReg-ID) on a given index (gspc as example).
 
 ```
-python3 trading_agent.py --task transfer_learning --epsd 100 --epcp 15 --mthd numq --indx gspc --symb ^GSPC --save numq_gspc_transfer.pt
+python3 trading_agent.py --task transfer_learning --epsd 100 --epcp 15 --mthd numq --indx gspc --symb ^GSPC --train full_train --eval test --save numq_gspc_transfer.pt
 ```
 
 ```
-python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregad --indx gspc --symb ^GSPC --save numderegad_gspc_transfer.pt
+python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregad --indx gspc --symb ^GSPC --train full_train --eval test --save numderegad_gspc_transfer.pt
 ```
 
 ```
-python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregid --indx gspc --symb ^GSPC --save numderegid_gspc_transfer.pt
+python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregid --indx gspc --symb ^GSPC --train full_train --eval test --save numderegid_gspc_transfer.pt
 ```
 
 Notes: 
 - we train NumDReg-AD and NumDReg-ID for 33 episodes since the training is split into 3 steps, each with 33 episodes, for a total of 99
 - we use the additional parameter epcp to denote the number of episodes for which we train on each component stock. If theres 6 stocks in a group, that's 60 episodes.
+- we train on full_train (train + valid) and evaluate on test
 
 **WARNING**: For transfer learning, our code save weights and plots from different models it produces. If you run a new experiment for an index (gspc, djia, nyse, nasdaq) and method (NumQ, NumDReg-AD, NumDReg-ID), you will overwrite the plots, experiment logs, and weights saved for that index, method pair.
 
@@ -470,7 +473,7 @@ We show the evaluation on the validation set below:
 The following shows the performance of NumQ evaluated on NASDAQ.
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
 
-It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results.
+It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
 
 # Conclusion
 

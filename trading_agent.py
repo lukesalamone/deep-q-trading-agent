@@ -15,7 +15,8 @@ parser.add_argument('--epsd', type=int, help='The number of episodes to run')
 parser.add_argument('--epcp', type=int, help='The number of episodes to run for each component stock in index')
 parser.add_argument('--indx', type=str, help='The index we are trading (gspc, djia, nasdaq, nyse)')
 parser.add_argument('--symb', type=str, help='The symbol of what we are trading')
-parser.add_argument('--eval', type=str, help='The data set to evaluate on (train, valid, test)')
+parser.add_argument('--train', type=str, help='The data set to evaluate on (train, full_train)')
+parser.add_argument('--eval', type=str, help='The data set to evaluate on (valid, test)')
 parser.add_argument('--mthd', type=str, help='The model method to use (numq, numdregad, numdregid)')
 parser.add_argument('--stgy', type=str, help='The default strategy to use (buy, hold, sell)')
 parser.add_argument('--load', type=str, help='Path to load model from')
@@ -34,8 +35,9 @@ if __name__ == '__main__':
     episodes_components = config['EPISODES_COMPONENT_STOCKS']
     index = 'gspc'
     symbol = '^GSPC'
+    train_set = 'train'
     eval_set = 'valid'
-    method = method_dict['numdregid']
+    method = method_dict['numq']
     strategy = strategy_dict['hold']
     load_path = 'temp_agent.pt'
     save_path = 'temp_agent.pt'
@@ -51,6 +53,8 @@ if __name__ == '__main__':
         index = args.indx
     if args.symb:
         symbol = args.symb
+    if args.train:
+        train_set = args.train
     if args.eval:
         eval_set = args.eval
     if args.mthd:
@@ -70,7 +74,7 @@ if __name__ == '__main__':
         'data': {
             'index': index,
             'symbol': symbol,
-            'train_set': 'train',
+            'train_set': train_set,
             'eval_set': eval_set,
             'path': config['STONK_PATH'],
             'splits': config['STONK_INDEX_SPLITS']
