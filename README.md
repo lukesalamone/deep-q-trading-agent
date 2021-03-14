@@ -37,18 +37,15 @@ This tutorial assumes a basic understanding of Python and Pytorch. If you would 
 
 # Scraping stock indices
 
-This repository contains a file called `download_stock_data.py`. Edit this file to include the names of the components for each of the following stock indices:
+The `pilepines` directory contains a script called `download_stock_data.py`. Running this file will download the following stock indices into the directory `stock_data`:
  - Dow Jones Industrial Average (`^DJI`)  
  - S&P 500 (`^GSPC`)  
  - NASDAQ (`^IXIC`)  
  - NYSE (`^NYSE`)  
 
-```python
-INDEX_NAME = 'ixic'
-COMPONENTS_LIST = ['OPTT', 'NMRK', 'SCOA', ...]
-```
+To run this file, execute `python pipelines/download_stock_data.py` from the root directory of this repository. It may take about 10 minutes to finish downloading since some of the indices are fairly large.
 
-Running this file will save each of the components into a directory `raw/{index_name}/` with each component saved as a CSV file.
+Next, we will need to run a script which ranks and groups the components using two different metrics: correlation and MSE from an autoencoder. To do this, please run `pipelines/create_groups.py` from the root directory of this repository. For more information, please see the [Transfer Learning](#transfer-learning) section.
 
 # Reinforcement learning
 
