@@ -1,31 +1,35 @@
+import pandas as pd
+from pandas import DataFrame
 import yfinance as yf
 import sys
 import json
 import os
 
-########################################
-#          set variables here          #
 
-METADATA_PATH = "../stock_data/metadata.json"
+METADATA_PATH = "stock_data/metadata.json"
 START_DATE = "1991-01-01"
 END_DATE = "2021-01-01"
-
-
-########################################
+OUT_PATH = 'stock_data'
 
 def download_index(name, index, components_list):
     components_list.append(index)
     dir_name = index[1:].lower()
-    os.mkdir(f'../raw/{dir_name}')
+    os.mkdir(f'{OUT_PATH}/{dir_name}')
 
     for i, symbol in enumerate(components_list):
         symbol = f'{symbol}'
         print(f'{name}: ({i+1}/{len(components_list)}) downloading symbol { symbol } . . .')
-        data = yf.download(symbol, start="1987-01-01", end="2017-12-31")
-        data.to_csv(f'../raw/{dir_name}/{symbol}.csv')
+
+        # download csv from yfinance
+        data = yf.download(symbol, start=START_DATE, end=END_DATE)
+
+        # fix missing data points
+        data = data['Adj Close'].fillna(method='ffill')
+
+        data.to_csv(f'{OUT_PATH}/{dir_name}/{symbol}.csv')
 
 
-def main():
+def download_files():
     with open(METADATA_PATH, 'r') as f:
         metadata = json.load(f)
 
@@ -36,4 +40,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    # downloads stock data files and adds them to ../raw/
+    download_files()
+
+
