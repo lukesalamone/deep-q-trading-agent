@@ -482,11 +482,9 @@ From the same timeline as the transfer learning (2015-2020)
 
 The model results here are in the expected order and still make a profit using the same data, but fall short of the profits achieved by the paper.
 
-<br/><br/>
-
 ## Selected Models after pretraining
 
-## Pretraining on groups
+### Pretraining on groups
 
 The following shows the performance of our pretrained agents on groups of component stocks from the index GSPC.
 Method: **NumDReg-ID**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)
@@ -504,7 +502,7 @@ Given the total profits achieved, we select the best performing group `mse - hig
 The following shows the performance of NumQ evaluated on NASDAQ.
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
 
-It is important to note that the data used to do the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
+It is important to note that the data used on the indexes GSPC, NASDAQ, DJIA, and NYSE, as well as for the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
 
 # Conclusion
 
