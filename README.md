@@ -347,6 +347,8 @@ Now we can run experiments from the command line using the following set of argu
 
 <b>--epsd</b>: The number of episodes to run (if running training)
 
+<b>--epcp</b>: The number of episodes to run for each component stock in index (if running transfer_learning)
+
 <b>--indx</b>: The index to use for the specified task
 
 <b>--symb</b>: The symbol of what we want to trade (not the same as index in the case of transfer learning)
@@ -391,15 +393,27 @@ python3 trading_agent.py --task train --epsd 33 --mthd numdregad --indx gspc --s
 python3 trading_agent.py --task train --epsd 33 --mthd numdregid --indx gspc --symb ^GSPC --save numdregid_gspc.pt
 ```
 
-Note: we train NumDReg-AD and NumDReg-ID for 33 episodes since
+Note: we train NumDReg-AD and NumDReg-ID for 33 episodes since the training is split into 3 steps, each with 33 episodes, for a total of 99.  
 
-The following commands were used to run the transfer learning experiments...
+The following commands were used to run the transfer learning experiments for each method (NumQ, NumDReg-AD, NumDReg-ID) on a given index (gspc as example).
 
-Todo - put in all commands to for experiments we showed...
+```
+python3 trading_agent.py --task transfer_learning --epsd 100 --epcp 15 --mthd numq --indx gspc --symb ^GSPC --save numq_gspc_transfer.pt
+```
 
+```
+python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregad --indx gspc --symb ^GSPC --save numderegad_gspc_transfer.pt
+```
 
+```
+python3 trading_agent.py --task transfer_learning --epsd 33 --epcp 10 --mthd numdregid --indx gspc --symb ^GSPC --save numderegid_gspc_transfer.pt
+```
 
+Notes: 
+- we train NumDReg-AD and NumDReg-ID for 33 episodes since the training is split into 3 steps, each with 33 episodes, for a total of 99
+- we use the additional parameter epcp to denote the number of episodes for which we train on each component stock. If theres 6 stocks in a group, that's 60 episodes.
 
+**WARNING**: For transfer learning, our code save weights and plots from different models it produces. If you run a new experiment for an index (gspc, djia, nyse, nasdaq) and method (NumQ, NumDReg-AD, NumDReg-ID), you will overwrite the plots, experiment logs, and weights saved for that index, method pair.
 
 
 # Selected Results
