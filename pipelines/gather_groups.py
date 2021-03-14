@@ -1,11 +1,14 @@
 from torch import optim
 from torch.nn import functional as F
 from models.models import StonksNet
+import torch
 import torch.nn as nn
 from torch import Tensor
+import pandas as pd
+import numpy as np
 import json
 
-from utils.load_file import *
+from utils.load_file import StockLoader
 
 # Get all config values and hyperparameters
 # with open("config.yml", "r") as ymlfile:
@@ -35,30 +38,30 @@ def train_stonksnet(prices:Tensor):
     return model
 
 
-def measure_correlation(stock_path, index, outpath):
-    component_names = index_component_names(stock_path, index)
-    prices_i = load_index_prices(stock_path, index)
+def measure_correlation(index:str, outpath:str, loader:StockLoader):
+    component_names = loader.get_component_names(index)
+    prices_i = loader.get_index_prices(index)
 
     component_corr = {}
 
     for component in component_names:
-        prices_c = component_prices(stock_path, index, component)
+        prices_c = loader.get_component_prices(index, component)
         component_corr[component] = np.corrcoef(prices_i, prices_c)[0, 1]
 
     print(component_corr)
     outpath = f'{outpath}/correlation/{index}.csv'
-    df = pd.DataFrame(list(component_corr.items()), columns=['stonk', 'correlation'])
+    df = pd.DataFrame(list(component_corr.items()), columns=['symbol', 'correlation'])
     df.to_csv(outpath)
 
 
-def measure_autoencoder_mse(stock_path, index:str, outpath):
+def measure_autoencoder_mse(index:str, outpath:str, loader:StockLoader):
     load = False
     model_path = f'weights/mininet_{index}.pt'
     index = index.lower().replace('^', '')
 
     # load component prices
     # each row is a trading day, each column is a component
-    component_prices = load_component_prices(stock_path, index)
+    component_prices = loader.get_component_prices(index)
 
     if load:
         model = torch.load(model_path)
@@ -67,7 +70,7 @@ def measure_autoencoder_mse(stock_path, index:str, outpath):
         torch.save(model, model_path)
 
     predicted_prices = model(component_prices)
-    component_names = index_component_names(stock_path, index)
+    component_names = loader.get_component_names(index)
     component_mse = {}
 
     # transpose actual and predicted so that each row is now a component
@@ -86,17 +89,17 @@ def measure_autoencoder_mse(stock_path, index:str, outpath):
 
     return model
 
-def gather_groups(group_sizes:dict, stock_path:str):
+def gather_groups(group_sizes:dict, loader:StockLoader):
     groups = {}
 
     for index in group_sizes:
         size = group_sizes[index]
         hs = int(size/2)
-        correlations = load_relationship_info(stock_path, 'correlation', index)
+        correlations = loader.load_relationship_info('correlation', index)
         correlations = correlations.sort_values(by=['correlation'], ascending=False).to_numpy()
         correlations = list(map(lambda x: x[1], correlations))
 
-        mse = load_relationship_info('stonksnet', index)
+        mse = loader.load_relationship_info('mse', index)
         mse = mse.sort_values(by=['MSE'], ascending=False).to_numpy()
         mse = list(map(lambda x: x[1], mse))
 
@@ -117,20 +120,16 @@ def gather_groups(group_sizes:dict, stock_path:str):
 
 
 if __name__ == '__main__':
-    # for each stock index
-    #     train mininet
-    #     rank by mse, correlation
-    #     save results in relationships
-
     with open(METADATA_PATH, 'r') as f:
         metadata = json.load(f)
 
     STOCK_PATH = 'stock_data'
+    loader = StockLoader(stock_path=STOCK_PATH)
 
     for index in metadata:
         index_name, index_symbol, components, num = index.values()
-        measure_autoencoder_mse(stock_path=STOCK_PATH, index=index_symbol, outpath=OUT_PATH)
-        measure_correlation(stock_path=STOCK_PATH, index=index_symbol, outpath=OUT_PATH)
+        measure_autoencoder_mse(index=index_symbol, outpath=OUT_PATH, loader=loader)
+        measure_correlation(index=index_symbol, outpath=OUT_PATH, loader=loader)
 
-    gather_groups({x['symbol'][1:].lower():x['tl_size'] for x in metadata}, STOCK_PATH)
+    groups = gather_groups({x['symbol'][1:].lower():x['tl_size'] for x in metadata}, loader)
 

@@ -4,6 +4,7 @@ import yfinance as yf
 import sys
 import json
 import os
+from pathlib import Path
 
 METADATA_PATH = "stock_data/metadata.json"
 START_DATE = "1991-01-01"
@@ -13,7 +14,10 @@ OUT_PATH = 'stock_data'
 def download_index(name, index, components_list):
     components_list.append(index)
     dir_name = index[1:].lower()
-    os.mkdir(f'{OUT_PATH}/{dir_name}')
+    dir_path = f'{OUT_PATH}/{dir_name}'
+
+    if not Path(dir_path).exists():
+        os.mkdir(dir_path)
 
     for i, symbol in enumerate(components_list):
         symbol = f'{symbol}'
