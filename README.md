@@ -353,7 +353,9 @@ Now we can run experiments from the command line using the following set of argu
 
 <b>--symb</b>: The symbol of what we want to trade (not the same as index in the case of transfer learning)
 
-<b>--eval</b>: The dataset to evaluate the agent on
+<b>--train</b>: The dataset to train the agent on (train, full_train)
+
+<b>--eval</b>: The dataset to evaluate the agent on (valid, test)
 
 <b>--mthd</b>: Which model architecture and training method to use (numq, numdregad, numdregid)
 
