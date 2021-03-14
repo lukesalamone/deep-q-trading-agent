@@ -61,7 +61,7 @@ def measure_autoencoder_mse(index:str, outpath:str, loader:StockLoader):
 
     # load component prices
     # each row is a trading day, each column is a component
-    component_prices = loader.get_component_prices(index)
+    component_prices = loader.get_all_component_prices(index)
 
     if load:
         model = torch.load(model_path)
