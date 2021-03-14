@@ -1,4 +1,4 @@
-from pipelines.transfer_learning import gather_groups
+from pipelines.gather_groups import gather_groups
 from pipelines.run_dqn import train, evaluate
 from models.models import *
 from typing import List, Dict
