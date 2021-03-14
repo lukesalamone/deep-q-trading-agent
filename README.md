@@ -343,7 +343,7 @@ Below we show a graph of the models trained on the 6 groups of component stocks 
 The groups are `correlation - high`, `correlation - low`, `correlation - highlow`, `mse - high`, 
 `mse - low`, `mse - highlow`. `RL` denotes an agent trained on the index. Each of these models is trained for 10 episodes on each stock.
 
-[pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
+![pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
 
 
 # Putting it all together
