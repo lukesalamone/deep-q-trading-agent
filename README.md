@@ -298,8 +298,6 @@ In order to calculate the mean squared error of the component stocks, we need to
 
 We will train an autoencoder such that X=Y, where X is the input and Y is the output. 
 
-
-
 The architecture of the autoencoder is very simple, having only 2 hidden layers with 5 units each. These small hidden layers force the model to encode the most essential information of its inputs into a small latent space. All extraneous information not represented in the latent space is discarded. Each of the inputs x<sub>i</sub> will be encoder with the autoencoder as y<sub>i</sub>, and it is against these that mean squared error is measured.
 
 ![autoencoder](src/img/autoencoder.png)
@@ -337,6 +335,16 @@ else if NumDReg - AD or NumDReg - ID:
     Train number branch on index
     Train end to end on index
 ```
+
+### Example of the models trained on the component stock groups: 
+
+Below we show a graph of the models trained on the 6 groups of component stocks for the index **GSPC** with method **NumDReg-ID**
+
+The groups are `correlation - high`, `correlation - low`, `correlation - highlow`, `mse - high`, 
+`mse - low`, `mse - highlow`. `RL` denotes an agent trained on the index. Each of these models is trained for 10 episodes on each stock.
+
+[pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
+
 
 # Putting it all together
 
