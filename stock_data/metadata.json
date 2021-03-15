@@ -15,7 +15,7 @@
     "name": "NASDAQ",
     "symbol": "^IXIC",
     "components": ["AAPL","ADBE","ADI","ADP","ADSK","AEP","ALGN","ALXN","AMAT","AMD","AMGN","AMZN","ANSS","ASML","ATVI","AVGO","BIDU","BIIB","BKNG","CDNS","CDW","CERN","CHKP","CHTR","CMCSA","COST","CPRT","CSCO","CSX","CTAS","CTSH","DLTR","DOCU","DXCM","EA","EBAY","EXC","FAST","FB","FISV","FOX","FOXA","GILD","GOOG","GOOGL","IDXX","ILMN","INCY","INTC","INTU","ISRG","JD","KDP","KHC","KLAC","LRCX","LULU","MAR","MCHP","MDLZ","MELI","MNST","MRNA","MRVL","MSFT","MTCH","MU","MXIM","NFLX","NTES","NVDA","NXPI","OKTA","ORLY","PAYX","PCAR","PDD","PEP","PTON","PYPL","QCOM","REGN","ROST","SBUX","SGEN","SIRI","SNPS","SPLK","SWKS","TCOM","TEAM","TMUS","TSLA","TXN","VRSK","VRSN","VRTX","WBA","WDAY","XEL","XLNX","ZM"],
-    "tl_components": 6
+    "tl_size": 6
   },
   {
     "name": "New York Stock Exchange",
