@@ -483,12 +483,33 @@ The model results here are in the expected order and still make a profit using t
 
 ### Pretraining on groups
 
-The following shows the performance of our pretrained agents on groups of component stocks from the index GSPC.
+The following plot shows the performance of our pretrained agents on groups of component stocks from the index GSPC.  
+Method: **NumQ**, epcp=15 (15 episodes for each component stock), epsd=100 (100 episodes for Training)
+
+![pretrained agents example numq gspc](src/img/numq/gspc/evaluation_all_groups.png)
+
+Given the total profits achieved, we select the best performing group `mse - low` and load those weights into our NumQ agent before further training it on the index stock. 
+We show a plot of the running Total Profits achieved when evaluating on the test set below:  
+
+![numq gspc transfer learning on test set](src/img/numq/gspc/evaluation.png)
+
+The following plot shows the performance of our pretrained agents on groups of component stocks from the index GSPC.  
+Method: **NumDReg-AD**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)
+
+![pretrained agents example numdregad gspc](src/img/numdreg_ad/gspc/evaluation_all_groups.png)
+
+Given the total profits achieved, we select the best performing group `mse - high` and load those weights into our NumDReg-AD agent before further training it for Steps 2 and 3 on the index stock. 
+We show a plot of the running Total Profits achieved when evaluating on the test set below:  
+
+![numdregad gspc transfer learning on test set](src/img/numdreg_ad/gspc/evaluation.png)
+
+The following plot shows the performance of our pretrained agents on groups of component stocks from the index GSPC.  
 Method: **NumDReg-ID**, epcp=10 (10 episodes for each component stock), epsd=33 (33 episodes for Training Steps 2 and 3)
 
-![pretrained agents example](src/img/numdreg_id/gspc/evaluation_all_groups.png)
+![pretrained agents example numdregid gspc](src/img/numdreg_id/gspc/evaluation_all_groups.png)
 
-Given the total profits achieved, we select the best performing group `mse - highlow` and load those weights into our NumDReg-ID agent before further training it for Steps 2 and 3 on the index stock. We show a plot of the running Total Profits achieved when evaluating on the test set below:  
+Given the total profits achieved, we select the best performing group `mse - highlow` and load those weights into our NumDReg-ID agent before further training it for Steps 2 and 3 on the index stock. 
+We show a plot of the running Total Profits achieved when evaluating on the test set below:  
 
 ![numdregid gspc transfer learning on test set](src/img/numdreg_id/gspc/evaluation.png)
 
@@ -496,7 +517,9 @@ Given the total profits achieved, we select the best performing group `mse - hig
 ## Selected Models after training
 
 ### NumQ
-The following shows the performance of NumQ evaluated on NASDAQ.
+
+The following shows the performance of NumQ evaluated on NASDAQ.  
+
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
 
 It is important to note that the data used on the indexes GSPC, NASDAQ, DJIA, and NYSE, as well as for the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
