@@ -524,7 +524,26 @@ The following shows the performance of NumQ evaluated on NASDAQ.
 
 ![numq eval on nasdaq](src/img/evaluation_numq_nasdaq.png)
 
-It is important to note that the data used on the indexes GSPC, NASDAQ, DJIA, and NYSE, as well as for the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
+The following plots show the performance of our agents on the index GSPC.  
+We plot running Total Profits on the test set.
+
+Method: **NumQ**, epsd=100
+
+![numq gspc](src/img/train_gspc/numq_evaluation.png)
+
+Method: **NumDReg-AD**, epsd=33 (Step 1: 33, Step 2: 33, Step 3: 33)
+
+![numq gspc](src/img/train_gspc/numdregad_evaluation.png)
+
+Method: **NumDReg-ID**, epsd=33 (Step 1: 33, Step 2: 33, Step 3: 33)
+
+![numq gspc](src/img/train_gspc/numdregid_evaluation.png)
+
+
+It is important to note that the data used on the indexes GSPC, NASDAQ, DJIA, and NYSE, as well as for the transfer learning section has a significantly shorter timeline than the data from the paper, limiting the agents' ability to achieve better results. 
+Furthermore, we can see that from most plots, the agent is making a profit until early 2020 when there was a crash due to the pandemic. 
+This occurs near the end of the data and results in a drop in profits more so than if the agent just did a buy and hold before the crash. 
+Because using the same test period as the paper would have significantly limited our training size, we used all the data we could and kept this as the test period.
 
 # Conclusion
 
