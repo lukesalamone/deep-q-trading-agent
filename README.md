@@ -65,97 +65,6 @@ where s<sub>t</sub> = p<sub>t</sub> - p<sub>t-1</sub>, the day-to-day closing tr
 
 We use Deep Q Learning to learn optimal action values to maximize total profits, given greedy action policy. 
 
-## Training process
-
-Reinforcement learning agents are trained over a number of episodes, during which they interact with an environment, in which they observe states, take actions, and receive rewards. By taking a step in the environment, an agent experiences a tuple `(state, action, reward, next_state)`. In other words, the agent observes `state`, performs `action`, receives `reward` and observes `next_state`. We call this a transition and we store these transitions in a memory buffer. The memory buffer can be described as containing the agent's experience. In Deep Q Learning, the agent leverages this experience to learn how to evaluate actions at a given state.
-
-Recall that the `next_state` is not a function of the `action` taken since the agents action will not have a significant effect on the index price change. We choose to emulate all actions at a given state. In other words, at s<sub>t</sub> the agent will take what it evaluates to be the optimal action, a<sup>*</sup>, but we compute and record the rewards obtained for all three possible actions, BUY, HOLD, and SELL. So in our implementation, a transition is `(state, action, rewards_all_actions, next_state)`.
-
-Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes sense in this context. We used a `FinanceEnvironment` class to track information during training, which has the added benefit of making the code more readable.
-
-### The Finance Environment
-
-We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
-
-The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
-
-The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
-
-### The Deep Q Learning Algorithm in the Paper:
-
-The Deep Q Learning algorithm used in the paper is shown below:
-
-![qlearning](src/img/Q_learning_including_the_action_strategy.png)
-
-### Action strategies in a "confused market"
-
-A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
-
-|Q(s<sub>t</sub>, a<sub>BUY</sub>) - Q(s<sub>t</sub>, a<sub>SELL</sub>)| &#47; &sum;|Q(s<sub>t</sub>, a)| &lt; threshold  
-
-If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
-
-Deep Q Networks use two neural networks working in tandem: a policy network which evaluates actions at a given state, and a target network which is periodically updated with the weights from the policy net. These two networks are used to learn the optimal
-
-### Our Implementation:
-
-Our implementation can be described by the following algorithm:
-```
-Initialize policy network, target network, and environment.
-For each each episode:
-	While not done:
-    Take a step
-    Select action and number using policy network and number branch
-    Compute reward for all 3 actions
-    Store state transition (state, action, rewards_all_actions, next_state) in memory buffer
-    Optimize:
-	    Get batch of transitions from memory buffer
-	    Compute loss as difference between actual and expected q values
-      Backpropagate loss
-    Soft update target network with policy network parameters
-  Reset environment
-```
-
-At the beginning of training, the policy network and target network are initialized. Iterating for a number of epides
-After this, we begin to iterate over a number of episodes.
-
-Next, the model will undergo an optimization step.
-
-During optimization, batch transitions are retrieved from the memory buffer. 
-
-Then the loss is computed as the smooth l1 loss between actual and expected Q values and backpropagated through the policy net.
-
-The expected Q values for each action and state pair are computed as the sum of the observed reward for taking that action and the discounted Q values generated by the next state.  
-
-Q(s<sub>t</sub>, a<sub>t</sub>) := Q(s<sub>t</sub>, a<sub>t</sub>) + &theta; * { r<sub>t</sub> + &gamma; Q(s<sub>t</sub>, a&prime;) - Q(s<sub>t</sub>, a<sub>t</sub>) }
-
-After an optimization step, we update the parameters of the target network, &theta;<sub>target</sub>,  with those of the policy network, &theta;<sub>policy</sub>. We use soft updates with interpolation parameter &tau; = 0.0003 :  
-
-&theta;<sub>target</sub> = &tau; * &theta;<sub>policy</sub> + (1 - &tau;) * &theta;<sub>target</sub> 
- 
-Our code can also use hard updates, which would take place every N episodes, but we have not experimented enough to choose a good value for N.  
-
-We then reset the environment to begin serving states from the beginning of the episode again.
-
-### Challenges faced in implementation and design choices.
-
-In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper.
-
-**Problem 1**: The agent started falling back on a single action.
-- We tried turning off the action strategy
-- We tried exploration strategies
-- We decided to emulate each action at each step ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
-We introduce this change at step 9. Our reasoning is that it provided more training data for Q-function and stabilized learning.
-
-**Problem 2**: When do we update the target network?
-- Deep Q Learning can require a lot of experimentation. We did not have much time to perform these experiments, 
-so episode, we use soft target updates, that is: &theta;<sub>target</sub> = &tau; * &theta;<sub>policy</sub> + (1 - &tau;) * &theta;<sub>target</sub> 
-using interpolation parameter &tau;,
-
-**Problem 3**: The Q function was not adapting quickly to new situations in the market.
-- We don’t use Experience Memory Replay (Use random sample of past transitions for minibatch training)
-- We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)). We use the minibatch size (64) as N.
-
 # Model Architectures
 ## NumQ
 
@@ -256,6 +165,97 @@ This is the third and final paper introduced in the paper. It contains an action
 
 ![numdreg-id architecture](src/img/numdregid.png)
 
+## Training process
+
+Reinforcement learning agents are trained over a number of episodes, during which they interact with an environment, in which they observe states, take actions, and receive rewards. By taking a step in the environment, an agent experiences a tuple `(state, action, reward, next_state)`. In other words, the agent observes `state`, performs `action`, receives `reward` and observes `next_state`. We call this a transition and we store these transitions in a memory buffer. The memory buffer can be described as containing the agent's experience. In Deep Q Learning, the agent leverages this experience to learn how to evaluate actions at a given state.
+
+Recall that the `next_state` is not a function of the `action` taken since the agents action will not have a significant effect on the index price change. We choose to emulate all actions at a given state. In other words, at s<sub>t</sub> the agent will take what it evaluates to be the optimal action, a<sup>*</sup>, but we compute and record the rewards obtained for all three possible actions, BUY, HOLD, and SELL. So in our implementation, a transition is `(state, action, rewards_all_actions, next_state)`.
+
+Our training logic defines an episode as one chronological pass through the training data. This detail is not specified in the paper, but one pass over the data makes sense in this context. We used a `FinanceEnvironment` class to track information during training, which has the added benefit of making the code more readable.
+
+### The Finance Environment
+
+We include an environment for training which encapsulates many variables that would otherwise need to be tracked in the training loop. We use the `FinanceEnvironment` to store these variables and provide them as needed to the agent during training.
+
+The `FinanceEnvironment` class exposes only a few necessary methods to the training loop. For example, `step()` returns `state` and `done`. The first of these is the difference in stock prices for the 200 days prior to the current day. The second indicates whether the episode is done. Executing `step()` updates several internal variables used in profit and reward calculations.
+
+The other important method of the environment is `update_replay_memory()`. This method adds a `(state, action, rewards_all_actions, next_state)` transition to the replay memory. This will be sampled later when the model is optimized. Because the environment stores and updates most of these variables internally, they do not clutter up the training loop.
+
+### The Deep Q Learning Algorithm in the Paper:
+
+The Deep Q Learning algorithm used in the paper is shown below:
+
+![qlearning](src/img/Q_learning_including_the_action_strategy.png)
+
+### Action strategies in a "confused market"
+
+A confused market is defined as a market situation where it is too difficult to make a robust decision. A "confused market" occurs when the following equation holds:  
+
+|Q(s<sub>t</sub>, a<sub>BUY</sub>) - Q(s<sub>t</sub>, a<sub>SELL</sub>)| &#47; &sum;|Q(s<sub>t</sub>, a)| &lt; threshold  
+
+If agent is in a confused market, pick an action from a predetermined action strategy such as BUY, HOLD, or SELL. Since the goal is to minimize loss caused by uncertain information, we use HOLD. Our paper did not specify a value for threshold. We found that `THRESHOLD = 0.2` was too high. `THRESHOLD = 0.0002` worked well.
+
+Deep Q Networks use two neural networks working in tandem: a policy network which evaluates actions at a given state, and a target network which is periodically updated with the weights from the policy net. These two networks are used to learn the optimal
+
+### Our Implementation:
+
+Our implementation can be described by the following algorithm:
+```
+Initialize policy network, target network, and environment.
+For each each episode:
+	While not done:
+    Take a step
+    Select action and number using policy network and number branch
+    Compute reward for all 3 actions
+    Store state transition (state, action, rewards_all_actions, next_state) in memory buffer
+    Optimize:
+	    Get batch of transitions from memory buffer
+	    Compute loss as difference between actual and expected q values
+      Backpropagate loss
+    Soft update target network with policy network parameters
+  Reset environment
+```
+
+At the beginning of training, the policy network and target network are initialized. Iterating for a number of epides
+After this, we begin to iterate over a number of episodes.
+
+Next, the model will undergo an optimization step.
+
+During optimization, batch transitions are retrieved from the memory buffer. 
+
+Then the loss is computed as the smooth l1 loss between actual and expected Q values and backpropagated through the policy net.
+
+The expected Q values for each action and state pair are computed as the sum of the observed reward for taking that action and the discounted Q values generated by the next state.  
+
+Q(s<sub>t</sub>, a<sub>t</sub>) := Q(s<sub>t</sub>, a<sub>t</sub>) + &theta; * { r<sub>t</sub> + &gamma; Q(s<sub>t</sub>, a&prime;) - Q(s<sub>t</sub>, a<sub>t</sub>) }
+
+After an optimization step, we update the parameters of the target network, &theta;<sub>target</sub>,  with those of the policy network, &theta;<sub>policy</sub>. We use soft updates with interpolation parameter &tau; = 0.0003 :  
+
+&theta;<sub>target</sub> = &tau; * &theta;<sub>policy</sub> + (1 - &tau;) * &theta;<sub>target</sub> 
+ 
+Our code can also use hard updates, which would take place every N episodes, but we have not experimented enough to choose a good value for N.  
+
+We then reset the environment to begin serving states from the beginning of the episode again.
+
+### Challenges faced in implementation and design choices.
+
+In our experiments, we ran into some problems and so we introduced a few changes to the algorithm given by the paper.
+
+**Problem 1**: The agent started falling back on a single action.
+- We tried turning off the action strategy
+- We tried exploration strategies
+- We decided to emulate each action at each step ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)).  
+We introduce this change at step 9. Our reasoning is that it provided more training data for Q-function and stabilized learning.
+
+**Problem 2**: When do we update the target network?
+- Deep Q Learning can require a lot of experimentation. We did not have much time to perform these experiments, 
+so episode, we use soft target updates, that is: &theta;<sub>target</sub> = &tau; * &theta;<sub>policy</sub> + (1 - &tau;) * &theta;<sub>target</sub> 
+using interpolation parameter &tau;,
+
+**Problem 3**: The Q function was not adapting quickly to new situations in the market.
+- We don’t use Experience Memory Replay (Use random sample of past transitions for minibatch training)
+- We use online learning, by storing past N transitions into a memory buffer and use those for minibatch training ([Deep Q-trading, Wang et al](http://cslt.riit.tsinghua.edu.cn/mediawiki/images/5/5f/Dtq.pdf)). We use the minibatch size (64) as N.
+
 ## 3 step training (NumDReg-AD/ID)
 
 The NumDReg-AD and NumDReg-ID models both require a different training process from NumQ to train their two branches. The three-step training process for both of these models is as follows...
@@ -293,7 +293,7 @@ Creating these groups allows our models to be pretrained on stocks which are pro
 
 In order to calculate the mean squared error of the component stocks, we need to train an autoencoder which will predict a series of stock prices for each component in an index. That is, the input size of the network will be MxN, where M is the number of components in the index and N is the number of days in the time series.
 
-We will train an autoencoder such that X=Y, where X is the input and Y is the output. 
+We will train an autoencoder such that X=Y, where X is the input and Y is the output.
 
 The architecture of the autoencoder is very simple, having only 2 hidden layers with 5 units each. These small hidden layers force the model to encode the most essential information of its inputs into a small latent space. All extraneous information not represented in the latent space is discarded. Each of the inputs x<sub>i</sub> will be encoder with the autoencoder as y<sub>i</sub>, and it is against these that mean squared error is measured.
 
