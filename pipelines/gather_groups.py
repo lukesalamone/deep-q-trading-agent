@@ -148,6 +148,5 @@ if __name__ == '__main__':
     #     measure_autoencoder_mse(outpath=OUT_PATH, loader=loader)
     #     measure_correlation(outpath=OUT_PATH, loader=loader)
 
-    loader = StockLoader(index_name='dji', stock_path=STOCK_PATH)
     groups = gather_groups()
 
