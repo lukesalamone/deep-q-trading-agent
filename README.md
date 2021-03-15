@@ -37,7 +37,9 @@ This tutorial assumes a basic understanding of Python and Pytorch. If you would 
 
 # Scraping stock indices
 
-The `pilepines` directory contains a script called `download_stock_data.py`. Running this file will download the following stock indices into the directory `stock_data`:
+**These instructions are for using your own data. To use the data provided in the repository (and used in the results shown below) skip ahead to the next section.**
+
+The `pipelines` directory contains a script called `download_stock_data.py`. Running this file will download the following stock indices into the directory `stock_data`:
  - Dow Jones Industrial Average (`^DJI`)  
  - S&P 500 (`^GSPC`)  
  - NASDAQ (`^IXIC`)  
