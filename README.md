@@ -553,6 +553,8 @@ While The agents trained here in our experimets make a profits on average, they 
 
 2. <b>A different and smaller timeline</b> to train and test the model likely caused lower profits.
 
-3. <b>A problem within the RL process</b> likely is another likely cause of smaller profits. While the losses decrease, and rewards and profits increase as expected and furthermore appear to converge, they do so at a lower level than expected.
+3. <b>A problem within the RL process</b> is another likely cause of smaller profits. While the losses decrease, and rewards and profits increase as expected and furthermore appear to converge, they do so at a lower level than expected.
+
+4. <b>Predicting stock prices is hard</b.
 
 Regardless, it is clear the RL agent learns to generate some profits and the proposed modifications in architecture and training process described above do result in the expected improvements in profits.
