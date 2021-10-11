@@ -9,7 +9,7 @@ This paper adresses three problems.
 2. What action strategy for a trading agent in "confused market".
 3. There is a lack of financial data for deep learning, which leads to overfitting. 
 
-The authors if the paper use Reinforcement Learning and transfer learning to tackle these problems. We implement their core idea, which is the combination of a Deep Q Network to evaluate trading actions given a market situation with a Deep Neural Network Regressor to predict the number of shares with which to perform the best action. We implement and present the three Deep Q-learning architectures used in the paper, the transfer learning algorithm used, two different means of index component stock rankings, and action strategies for dealing with what the authors call a "confused market".
+The authors of this paper use Reinforcement Learning and transfer learning to tackle these problems. We implement their core idea, which is the combination of a Deep Q Network to evaluate trading actions given a market situation with a Deep Neural Network Regressor to predict the number of shares with which to perform the best action. We implement and present the three Deep Q-learning architectures used in the paper, the transfer learning algorithm used, two different means of index component stock rankings, and action strategies for dealing with what the authors call a "confused market".
 
 We note that the authors make the following assumptions regarding their Reinforcement Learning agent:
 - It can perform one action each day: BUY, HOLD, or SELL. 
